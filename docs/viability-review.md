@@ -53,6 +53,23 @@ Written 2026-09-24. This judges the **outcome**, not the handoff's design.
 - **Headphone "multipoint" doesn't mix.** It connects to two sources but plays only one at a time. That's why this box needs to exist (sourced; common knowledge).
 - **Phones as hosts:** iOS and Android both support class-compliant USB audio. Phone-supplied power (~100 mA+) should cover the box, though it's near the edge on some phones (estimate).
 
+### 2d. Hosts (owner, 2026-09-24): MacBook + a handheld running Android or Linux
+
+No phones, no Windows, no consoles.
+
+| Host | UAC2 async support | Notes | Confidence |
+|---|---|---|---|
+| MacBook | Yes, class-compliant | Needs the Feature Unit (volume/mute), or the slider greys out (review-notes #9). | ~90% |
+| Linux handheld | Yes (`snd-usb-audio`) | The best-trodden path. PipeWire/Pulse volume works either way. | ~90% |
+| Android handheld | Yes on modern Android (8+) | Android routes all audio to a USB audio device automatically. Vendor kernels occasionally ship quirks. | ~80% |
+
+- **Windows drops out of the test plan.** The feedback-format quirk (review-notes #10) no longer matters.
+- **Console UAC1 support isn't needed.**
+- **Practical catch: charging the handheld.** If it has one USB-C port, the box occupies it, so you can't charge while playing.
+  - Easy fix: a commercial USB-C hub with PD pass-through between the handheld and the box. Difficulty 1/10, ~85%.
+  - Building PD pass-through into the box is possible but hard: difficulty 7–8/10, ~40%.
+- **Handheld battery:** when the handheld is the only host, it powers the whole box (~70–120 mA estimate). That's a small drain.
+
 ---
 
 ## 3. Architecture options for the outcome

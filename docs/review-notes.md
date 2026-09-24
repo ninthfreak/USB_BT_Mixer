@@ -45,3 +45,11 @@ Full list of integer options from the 12 MHz crystal (≤ 210 MHz): 30.72, 46.08
 - It doesn't affect pins driven by Pico A or tied hard to GND.
 - If you use Pico 2 boards, **disable internal pull-downs** on the I2S input pins.
 - Confidence: ~85% that it's harmless in this design with pulls off.
+
+## 6. RP2040-Zero power path (board under consideration)
+
+- **Source-verified:** on the RP2040-Zero, the **5V pin is wired straight to USB VBUS**, with no diode. The board has no power-path circuitry, only the ME6211 3.3 V LDO. (Waveshare wiki text, seen through search results. The schematic PDF couldn't be fetched from this environment.)
+- **Consequence:** the handoff's "tie the two VSYS pins together" becomes "tie two computers' VBUS together". **Don't do it.**
+- **Consequence 2:** Board A is the only clock source and the only output. If only Board B's cable is plugged in, Board A must still get power, so a shared rail is required.
+- Candidate fixes are in the chat log and not yet chosen. Test to run: power one Zero's 3V3 pin from a bench supply with USB unplugged, and measure the 5V pin. That shows whether the ME6211 back-feeds VBUS.
+- **CC resistors:** not verified. Test with a C-to-C cable into a laptop.

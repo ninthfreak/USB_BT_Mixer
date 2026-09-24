@@ -92,7 +92,7 @@ Listed because you asked about the outcome, not the design.
 
 | # | Risk | Impact if it goes wrong | How to retire it | Cost of test |
 |---|---|---|---|---|
-| 1 | Latency / no video sync (2a) makes the outcome unpleasant | The whole project, any design | **Latency test below** | ~$25, 1 hour |
+| 1 | Game-audio latency (2a) too high to enjoy (video sync is minor for this use case) | The whole project, any design | **Latency test below** | ~$25, 1 hour |
 | 2 | TSA5001 doesn't work on the ~4.7 V rail, has an odd I2S format, or picks a bad codec | Output stage swap | Bring it up with **one** QT Py sending a test tone, before any USB work | Parts on hand |
 | 3 | PIO I2S slave on board B | Mixing | Logic analyzer; there's existing community code | Time |
 | 4 | USB feedback (clock matching) misbehaves on one OS | Clicks or dropouts on that OS | Buffer-level logging (section 5) | Time |

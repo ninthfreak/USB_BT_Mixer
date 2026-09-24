@@ -1,0 +1,12 @@
+item,qty,part,notes,approx_cost_usd,status
+1,2,Raspberry Pi Pico or Pico 2 (NOT W),GPIO24 = VBUS sense only on non-W boards,4-5 each,to buy
+2,2,TinySine TSA5001 BT 5.3 I2S transmitter,I2S slave; 48 kHz; A2DP only; buy a spare,14.95 each,to buy
+3,1,2.4 GHz antenna U.FL (IPEX/MHF1),Confirm connector on the board; U.FL-to-SMA bulkhead if dropouts,3-8,to buy
+4,2,Panel USB-C female -> micro-USB male extension (data),Must have 5.1k Rd on CC or C-to-C cables won't power it (see docs/review-notes.md #1),3-6 each,to buy
+5,1,Momentary NO pushbutton panel-mount 6-12 mm,Across TSA5001 pairing header; hold 3 s search / 5 s clear,1-3,to buy
+6,1,Capacitor 22 uF >=10 V,Across rail near TSA5001; start 22 uF (review-notes #3),<1,to buy
+7,4,Resistor 33 ohm,Series on BCLK and LRCK from Pico A (to Pico B and TSA5001),<1,to buy
+8,1,26-28 AWG hookup wire + M2 screws/standoffs,,8,to buy
+9,1,3D-printed enclosure,No CF-filled filament near antenna,-,to design
+T1,1,8-ch 24 MHz logic analyzer (PulseView),Close to essential,10-15,tool
+T2,1,PCM5102A I2S DAC board (optional),Hear Pico A I2S before TSA5001 arrives,5-10,optional

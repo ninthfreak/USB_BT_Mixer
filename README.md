@@ -1,6 +1,6 @@
 # USB_BT_Mixer
 
-A small box with two USB-C inputs and one Bluetooth audio output. Each connected computer or phone sees a normal USB sound card. The box mixes both and streams the mix to Bluetooth headphones.
+A small box with two USB-C inputs and one Bluetooth audio output. Any USB-C host that supports USB audio sees each input as a normal USB sound card. The box mixes both inputs and streams the mix to any Bluetooth audio sink.
 
 - Design record: [`docs/HANDOFF.md`](docs/HANDOFF.md)
 - Corrections since the handoff: [`docs/review-notes.md`](docs/review-notes.md)

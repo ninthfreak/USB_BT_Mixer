@@ -2,14 +2,14 @@
 
 Checked 2026-09-24. These are corrections and added risks. The items are *not* yet verified on hardware.
 
-## 1. USB-C panel extensions may not get power from USB-C hosts (important)
+## 1. Board choice: the handoff says Pico, the plan was a USB-C RP2040 board
 
-- **Problem:** a USB-C host (a laptop's C port, a phone) only turns on VBUS when it sees a **5.1 kΩ pull-down (Rd) on CC**. Many cheap "USB-C female → micro-USB male" panel extensions don't have it.
-- **Symptom:** it works with a USB-A → C cable, but a C-to-C cable gives no power and no enumeration.
-- **Fix options:**
-  - Buy extensions that state "5.1k resistor" / "works with C-to-C", then test with a C-to-C cable when they arrive.
-  - Or use a USB-C breakout board with Rd on CC1 and CC2, wired to the Pico's USB test pads (TP2/TP3 = D−/D+) or a cut micro-USB cable.
-- **Confidence the problem is real:** ~90%. Whether a given listing has Rd: unknown until tested.
+- The handoff specifies a micro-USB Raspberry Pi Pico plus panel extensions. The real plan was a **USB-C RP2040 board** (Waveshare, Adafruit, or Seeed), with its **port exposed directly through the enclosure wall**. No extension cables.
+- Anything in the handoff that depends on the Pico board is suspect:
+  - **Power sharing:** the Pico has an onboard VBUS → VSYS Schottky. Other boards may tie their 5V pin straight to VBUS. If so, tying the two boards' 5V pins together **connects both computers' 5V rails**. Each board then needs its own external Schottky.
+  - **VBUS sense:** GPIO24 is Pico-only. Plan on a resistor divider from each board's VBUS (before any diode) to a spare GPIO.
+  - **CC resistors (5.1 kΩ Rd):** needed for C-to-C cables to supply power. Most USB-C boards have them. Verify per board.
+- Enclosure impact: the board's USB-C receptacle takes the plug forces directly. The enclosure must back the board so that plugging and unplugging don't load the solder joints.
 
 ## 2. System clock: 153.6 MHz is an overclock
 

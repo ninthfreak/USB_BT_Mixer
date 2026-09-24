@@ -35,6 +35,9 @@ Written 2026-09-24. This judges the **outcome**, not the handoff's design.
   - **Per-app audio delay:** VLC and mpv can shift the video to match. Browsers, Zoom, and most phone apps can't.
   - **Latency value in the USB descriptor:** the USB audio standard has a field for this, and TinyUSB exposes it. Whether macOS, Windows, iOS, or Android use it to shift video is unknown to me. I'd guess ~20–30% that at least one does.
 - **Only matters if you watch video or do calls through the box.** For music or games-without-lipsync, it's just delay.
+- **Owner's use case (2026-09-24):** gaming + music, or gaming + video playing in the background. Never calls. Eyes stay on the game, so **video lip sync is a minor issue**.
+  - The latency that matters is **game audio**. That's the same as direct Bluetooth (games never compensate); the box adds ~5–15 ms.
+  - So lowering Bluetooth latency (codec control, Nothing Low Lag, maybe LE Audio later) is the thing worth optimizing.
 
 ### 2b. Headphone codecs make the TSA5001's aptX support irrelevant
 

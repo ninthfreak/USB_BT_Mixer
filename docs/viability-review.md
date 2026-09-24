@@ -79,7 +79,9 @@ End-to-end path:
 | 2× XMOS (XU316) running XMOS's reference USB-audio firmware; one acts as I2S slave, the other uses the firmware's built-in mixer | 6–7/10 | ~45% | Mature, widely deployed USB-audio firmware. Heavy toolchain. **Power draw is likely much higher than RP2040** (estimate, unverified), which risks the one-host-powers-everything budget. |
 | One STM32 with two USB device controllers (OTG_FS + OTG_HS in FS mode), ST's USB device library | 7/10 | ~45% | One chip, one clock domain, easy mixing. TinyUSB can't do two device ports (verified); ST's library can run two device instances, but I believe ST ships only a UAC1 class with no feedback (estimate), so UAC2 async would have to be written. Few boards expose both ports. |
 
-**Recommendation:** 2× QT Py (chosen). The firmware-free analog route is the credible alternative: it trades the firmware risk (PIO I2S slave, feedback loop) for analog noise risk and fewer output-stage options.
+**Decision (owner, 2026-09-24): 2× RP2040 (QT Py).** XMOS was rejected on cost, and the analog-mix route was rejected because it adds a digital→analog→digital conversion.
+
+Previous recommendation, kept for the record: 2× QT Py. The firmware-free analog route is the credible alternative: it trades the firmware risk (PIO I2S slave, feedback loop) for analog noise risk and fewer output-stage options.
 
 ### 3b. Output stage (the latency lever)
 

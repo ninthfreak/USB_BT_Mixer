@@ -65,9 +65,6 @@ No phones, no Windows, no consoles.
 
 - **Windows drops out of the test plan.** The feedback-format quirk (review-notes #10) no longer matters.
 - **Console UAC1 support isn't needed.**
-- **Practical catch: charging the handheld.** If it has one USB-C port, the box occupies it, so you can't charge while playing.
-  - Easy fix: a commercial USB-C hub with PD pass-through between the handheld and the box. Difficulty 1/10, ~85%.
-  - Building PD pass-through into the box is possible but hard: difficulty 7–8/10, ~40%.
 - **Handheld battery:** when the handheld is the only host, it powers the whole box (~70–120 mA estimate). That's a small drain.
 
 ---

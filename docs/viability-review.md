@@ -36,7 +36,12 @@ Written 2026-09-24. This judges the **outcome**, not the handoff's design.
   - **Latency value in the USB descriptor:** the USB audio standard has a field for this, and TinyUSB exposes it. Whether macOS, Windows, iOS, or Android use it to shift video is unknown to me. I'd guess ~20–30% that at least one does.
 - **Only matters if you watch video or do calls through the box.** For music or games-without-lipsync, it's just delay.
 - **Owner's use case (2026-09-24):** gaming + music, or gaming + video playing in the background. Never calls. Eyes stay on the game, so **video lip sync is a minor issue**.
-  - The latency that matters is **game audio**. That's the same as direct Bluetooth (games never compensate); the box adds ~5–15 ms.
+  - The latency that matters is **game audio**. Games never compensate for Bluetooth delay, whether the headphones are paired directly or go through the box.
+  - **The box's own microcontroller path adds ~2–3 ms:** the TinyUSB FIFO at half-fill averages ~2 ms (verified: TinyUSB source comment), and each I2S hop is 1 frame, ≈21 µs (calculated).
+  - **Everything else differs from direct pairing in an unknown direction:**
+    - host USB-audio buffering replaces the host's own Bluetooth-stack buffering
+    - the TSA5001's input buffering, codec choice, encoder, and link settings replace the host's
+    - These parts dominate, and they can't be estimated precisely without measuring. An earlier "~5–15 ms" figure here had no basis and has been removed.
   - So lowering Bluetooth latency (codec control, Nothing Low Lag, maybe LE Audio later) is the thing worth optimizing.
 
 ### 2b. Headphone codecs make the TSA5001's aptX support irrelevant
@@ -109,7 +114,7 @@ Listed because you asked about the outcome, not the design.
 
 | # | Risk | Impact if it goes wrong | How to retire it | Cost of test |
 |---|---|---|---|---|
-| 1 | Game-audio latency (2a) too high to enjoy (video sync is minor for this use case) | The whole project, any design | **Latency test below** | ~$25, 1 hour |
+| 1 | Game-audio latency (2a) too high to enjoy (video sync is minor for this use case) | The whole project, any design | Rough check by direct pairing (section 5); real number only by measuring the built box | Free |
 | 2 | TSA5001 doesn't work on the ~4.7 V rail, has an odd I2S format, or picks a bad codec | Output stage swap | Bring it up with **one** QT Py sending a test tone, before any USB work | Parts on hand |
 | 3 | PIO I2S slave on board B | Mixing | Logic analyzer; there's existing community code | Time |
 | 4 | USB feedback (clock matching) misbehaves on one OS | Clicks or dropouts on that OS | Buffer-level logging (section 5) | Time |
@@ -121,10 +126,10 @@ Listed because you asked about the outcome, not the design.
 
 This replaces the handoff's milestone order.
 
-1. **Latency test (no build).** Buy a USB-C DAC dongle and a 3.5 mm Bluetooth transmitter.
-   - Chain: computer → dongle → transmitter → your headphones. That reproduces the box's latency exactly: the OS sees a USB card and doesn't know about the Bluetooth.
-   - Watch a video, take a call, do what you'd really use the box for.
-   - If it's unacceptable, stop here and rethink. If it's fine, the transmitter can become the fallback output stage.
+1. **Rough latency check (no build, no purchase).** Pair the headphones directly to the handheld and play a game.
+   - **What this tells you:** whether Bluetooth game-audio delay of roughly this size is tolerable for you. If you already game this way, the check is done.
+   - **What it does not tell you:** the box's actual latency. The box uses a different signal path (USB audio → two RP2040s → I2S → TSA5001) and a different Bluetooth chip, firmware, and possibly codec. Its latency could be higher or lower. Only a measurement at the end (handoff milestone 7 method) gives the real number.
+   - **Rejected alternative:** a USB-C DAC dongle + off-the-shelf transmitter. That's also only a proxy (no mixing path, different Bluetooth chip), so it adds cost without adding accuracy for this question.
 2. **Output stage, one board.** A QT Py as I2S master playing a generated sine wave → TSA5001 → headphones. No USB yet. Settles the voltage, format, and codec questions.
 3. **USB input, one board.** The QT Py enumerates as a UAC2 speaker and plays through the TSA5001.
    - Buffer-level logging over UART is how you confirm feedback works. It's optional, development-only (see chat).

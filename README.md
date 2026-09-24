@@ -6,4 +6,4 @@ A small box with two USB-C inputs and one Bluetooth audio output. Each connected
 - Corrections since the handoff: [`docs/review-notes.md`](docs/review-notes.md)
 - Parts list: [`hardware/BOM.csv`](hardware/BOM.csv)
 
-Status: planning. Board: USB-C RP2040 board (TBD), port exposed directly through the enclosure. Firmware and enclosure not started.
+Status: planning. Board: Adafruit QT Py RP2040 ×2, USB-C exposed directly through the enclosure. Wiring: `hardware/wiring.md`. Firmware and enclosure not started.

@@ -57,3 +57,44 @@ Full list of integer options from the 12 MHz crystal (≤ 210 MHz): 30.72, 46.08
 ## 7. Board comparison
 
 See `hardware/board-comparison.md`. The QT Py RP2040, KB2040, and Pro Micro RP2040 all have an onboard VBUS diode and CC resistors (confirmed from schematics). The shared-rail power design works on them as originally intended.
+
+## 8. Board chosen: Adafruit QT Py RP2040
+
+Sections 4–6 above that assume a Pico or Pico 2 are superseded:
+
+- GPIO24 VBUS sense → optional divider from JP2, or firmware-only detection (see `hardware/board-comparison.md`).
+- Erratum E9 (#5) → moot. The QT Py is RP2040, not RP2350.
+- Wiring → `hardware/wiring.md`.
+
+## 9. Volume control: omitting it likely breaks macOS
+
+- The handoff says to leave the volume control out of the USB descriptor and let the OS apply software volume.
+- **Windows** does that. **macOS generally doesn't.** It greys out the volume slider for devices that expose no volume control (the same as with HDMI). Confidence ~85%.
+- **Recommendation:** keep the Feature Unit (volume + mute), as TinyUSB's `uac2_speaker_fb` example already does, and apply the gain per board in firmware. Each computer's slider then still sets its level in the mix.
+- Difficulty 2/10.
+
+## 10. TinyUSB feedback: verified against current source
+
+Checked against the TinyUSB master branch cloned 2026-09-24:
+
+- The `uac2_speaker_fb` example exists.
+- The buffer-fill method is `AUDIO_FEEDBACK_METHOD_FIFO_COUNT`, set in `tud_audio_feedback_params_cb()`. It holds the FIFO at half full and adds about 2 ms of delay. The header comment says it's tested on Windows, Linux, and macOS.
+- **The Windows feedback-format worry is mostly handled.** For UAC2, TinyUSB sends 16.16 feedback in 4 bytes, which is the format Windows requires.
+- Keep "test on Windows" as a milestone, but it's lower risk than the handoff implied.
+
+## 11. Debug output: use the UART, not USB serial
+
+- The handoff's milestone 1 logs over "serial". On the QT Py, the only USB port is the audio port.
+- **Recommendation:** log on UART TX (GP20) to a 3.3 V USB-serial adapter. That keeps the audio USB descriptor simple.
+- USB CDC plus audio (composite) also works, but it adds another thing to debug on Windows.
+
+## 12. Smaller gaps
+
+| Item | Note | Risk |
+|---|---|---|
+| Firmware updates with the box closed | The BOOT button is inside the box. Add a TinyUSB reset interface so `picotool reboot -u` (or a 1200-baud touch) enters the bootloader. Consider a pinhole over the button as a backup. | Low |
+| NeoPixel | Drive GP11 low to keep it off (a few mA and stray light), or use it as a status LED, **not** red/green-coded. | Low |
+| USB suspend current | If one host sleeps while the other plays, the diode-OR can still draw ~100 mA from the sleeping host. That's technically over the 2.5 mA suspend limit. Hosts rarely enforce it. | Low |
+| Ground tie | The box joins both computers' grounds. The box's audio is digital so it's fine here, but either computer's *own* analog outputs could pick up hum. | Low |
+| Per-stage delay | Each slave stage adds 1 frame (≈21 µs). Negligible. | None |
+| PCM5102A test board | Many modules need SCK tied to GND (a solder jumper) to run without MCLK. Check before milestone 2. | Low |

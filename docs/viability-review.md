@@ -74,7 +74,12 @@ End-to-end path:
 | One chip with two USB device controllers | 7–8/10 | ~40% | **TinyUSB's device stack supports one port only** (verified: a single global `_usbd_rhport` in `usbd.c`). |
 | RP2040 native USB + PIO-USB as the second device | 8/10 | ~25% | PIO-USB device mode is experimental; isochronous support is unknown. |
 
-**Recommendation:** 2× QT Py (chosen).
+| **2× hardware USB-audio bridge chips (e.g., TI PCM2706: UAC1, I2S out), analog mix** | 3/10 | ~70% | **No firmware.** Each chip locks its sample clock to its own host, so the two outputs are in **different clock domains**. Mixing them in analog (each chip's DAC → resistor mix) sidesteps that. Output then needs an analog-input transmitter, or an ADC → I2S → TSA5001. Adds an analog stage, so hum/noise can enter from the hosts' tied grounds and USB power. UAC1 works on more hosts than UAC2. |
+| 2× hardware bridge chips, digital mix | 6/10 | ~50% | Same clock-domain split, so it needs hardware ASRC chips plus a mixer MCU. More parts than the RP2040 route for no gain. |
+| 2× XMOS (XU316) running XMOS's reference USB-audio firmware; one acts as I2S slave, the other uses the firmware's built-in mixer | 6–7/10 | ~45% | Mature, widely deployed USB-audio firmware. Heavy toolchain. **Power draw is likely much higher than RP2040** (estimate, unverified), which risks the one-host-powers-everything budget. |
+| One STM32 with two USB device controllers (OTG_FS + OTG_HS in FS mode), ST's USB device library | 7/10 | ~45% | One chip, one clock domain, easy mixing. TinyUSB can't do two device ports (verified); ST's library can run two device instances, but I believe ST ships only a UAC1 class with no feedback (estimate), so UAC2 async would have to be written. Few boards expose both ports. |
+
+**Recommendation:** 2× QT Py (chosen). The firmware-free analog route is the credible alternative: it trades the firmware risk (PIO I2S slave, feedback loop) for analog noise risk and fewer output-stage options.
 
 ### 3b. Output stage (the latency lever)
 
@@ -135,4 +140,5 @@ The board A I2S output stays the same for A, C, D and E. Option B adds board C, 
 - Creative BT-W5 (aptX Adaptive low-latency mode, ~50 ms claim): https://us.creative.com/p/accessories/creative-bt-w5
 - nRF5340 Audio unicast client (I2S/USB input): https://nrfconnectdocs.nordicsemi.com/ncs/2.6.1/nrf/applications/nrf5340_audio/unicast_client/README.html
 - LE Audio interop reports: https://devzone.nordicsemi.com/f/nordic-q-a/124106/nrf5340-nora-b126-as-hci-controller-for-le-audio-on-raspberry-pi-cm4-pairs-ok-no-audio-with-sony-wf-1000xm6 and https://github.com/zephyrproject-rtos/zephyr/discussions/96481
+- TI PCM2706 (UAC1, I2S mode via FSEL): https://www.ti.com/product/PCM2706
 - Board schematics: see `hardware/board-comparison.md`

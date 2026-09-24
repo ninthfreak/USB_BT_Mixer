@@ -53,3 +53,7 @@ Full list of integer options from the 12 MHz crystal (≤ 210 MHz): 30.72, 46.08
 - **Consequence 2:** Board A is the only clock source and the only output. If only Board B's cable is plugged in, Board A must still get power, so a shared rail is required.
 - Candidate fixes are in the chat log and not yet chosen. Test to run: power one Zero's 3V3 pin from a bench supply with USB unplugged, and measure the 5V pin. That shows whether the ME6211 back-feeds VBUS.
 - **CC resistors:** not verified. Test with a C-to-C cable into a laptop.
+
+## 7. Board comparison
+
+See `hardware/board-comparison.md`. The QT Py RP2040, KB2040, and Pro Micro RP2040 all have an onboard VBUS diode and CC resistors (confirmed from schematics). The shared-rail power design works on them as originally intended.

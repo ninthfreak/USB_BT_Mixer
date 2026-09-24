@@ -1,5 +1,5 @@
 item,qty,part,notes,approx_cost_usd,status
-1,2,USB-C RP2040 board (Waveshare / Adafruit / Seeed - TBD),USB-C port exposed directly through enclosure wall; check 5V/VBUS diode + CC resistors + VBUS pad,TBD,choose board
+1,2,USB-C RP2040 board - leaning Adafruit QT Py RP2040 (see board-comparison.md),Onboard VBUS diode + CC resistors verified from schematic; RP2040-Zero has no diode,~10 each,choose board
 2,2,TinySine TSA5001 BT 5.3 I2S transmitter,I2S slave; 48 kHz; A2DP only; buy a spare,14.95 each,to buy
 3,1,2.4 GHz antenna U.FL (IPEX/MHF1),Confirm connector on the board; U.FL-to-SMA bulkhead if dropouts,3-8,to buy
 5,1,Momentary NO pushbutton panel-mount 6-12 mm,Across TSA5001 pairing header; hold 3 s search / 5 s clear,1-3,to buy

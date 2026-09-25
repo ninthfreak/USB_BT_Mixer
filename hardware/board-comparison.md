@@ -23,6 +23,7 @@ Checked 2026-09-24.
 | **Adafruit KB2040** | **Yes:** VBUS → fuse → D1 (NSR0320) → `RAW` pin | **Yes** (R1, R2) | SJ1 solder-jumper pad | Schematic |
 | **SparkFun Pro Micro RP2040** | **Yes:** VBUS → PPTC fuse → D2 Schottky (280 mV) → `RAW` pin | **Yes** (R1, R3) | JP14 "USB solder pads" | Schematic |
 | Adafruit Feather RP2040 | Yes, VBUS → MBR540 → VHI. But VHI isn't on a header; only the `USB` pin (raw VBUS) and `BAT` are. | Yes | `USB` pin | Schematic |
+| SB Components Micro RP2040 | **No:** USB VBUS goes straight to the `5V` net and header pin | **No:** CC1/CC2 are unconnected in the schematic, so C-to-C cables won't supply power | `5V` header pin (it is VBUS) | Schematic (PDF from github.com/sbcshop/Micro_RP2040, v1.0, 2023-04-28) |
 | Waveshare RP2040-Zero | **No.** The 5V pin *is* VBUS. | Unverified | 5V pin | Text |
 | Seeed XIAO RP2040 | Unverified. Seeed advises adding your own diode when powering through the 5V pin, which suggests no onboard diode on that path. | Unverified | Unverified | Text (indirect) |
 | Pimoroni Tiny 2040 | Unverified | Unverified | Unverified | None |
@@ -50,5 +51,6 @@ Solder jumpers JP2 (QT Py) and SJ1 (KB2040) join two *different* nets in the sch
 - Adafruit KB2040 design files: https://github.com/adafruit/Adafruit-KB2040-PCB
 - Adafruit Feather RP2040 design files: https://github.com/adafruit/Adafruit-Feather-RP2040-PCB
 - SparkFun Pro Micro RP2040 design files: https://github.com/sparkfun/SparkFun_Pro_Micro-RP2040
+- SB Components Micro RP2040 schematic: https://github.com/sbcshop/Micro_RP2040
 - Waveshare RP2040-Zero wiki: https://www.waveshare.com/wiki/RP2040-Zero
 - Seeed XIAO RP2040 wiki: https://wiki.seeedstudio.com/XIAO-RP2040/

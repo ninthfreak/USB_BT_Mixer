@@ -98,3 +98,9 @@ Checked against the TinyUSB master branch cloned 2026-09-24:
 | Ground tie | The box joins both computers' grounds. The box's audio is digital so it's fine here, but either computer's *own* analog outputs could pick up hum. | Low |
 | Per-stage delay | Each slave stage adds 1 frame (≈21 µs). Negligible. | None |
 | PCM5102A test board | Many modules need SCK tied to GND (a solder jumper) to run without MCLK. Check before milestone 2. | Low |
+
+## 13. ESP32 switch: power and pin effects (2026-09-28)
+
+- **Power:** the ESP32 streaming Bluetooth adds roughly 100–150 mA (estimate), more with Wi-Fi. The box total is about 150–300 mA (estimate), still within one USB 2.0 port's 500 mA. Raise `bMaxPower` in each RP2040's USB descriptor to about 300–400 mA.
+- **Feather V2 feed:** shared rail → Schottky diode → Feather `USB` pin, so a flashing cable in the Feather's own USB-C can't back-feed the rail or the hosts. Confirm against the Feather V2 schematic.
+- **Pins:** the QT Py's only UART pair (GP20 TX / GP5 RX) is needed for the RP2040 → ESP32 control link. RP2040 debug logging moves to a PIO-based serial output on a spare pin. This supersedes #11. `hardware/wiring.md` needs updating once the mixing location is decided.

@@ -1,12 +1,22 @@
 item,qty,part,notes,approx_cost_usd,status
-1,2,Adafruit QT Py RP2040 (Adafruit PID 4900),Onboard VBUS diode + CC resistors verified from schematic; do not bridge JP2. Sellers: Adafruit; DigiKey; Newark; Jameco; RS; Amazon ASIN B09Q1P8QHP,9.95 each (Adafruit list price),to buy
-2,1,Adafruit ESP32 Feather V2 (original ESP32; Classic BT for A2DP source),Chosen BT output (docs/decisions.md). Check power path on ~4.7 V rail before wiring. Onboard antenna: place near a non-CF wall,TBD,to verify then buy
-F1,2,TinySine TSA5001 BT 5.3 I2S transmitter,I2S slave; 48 kHz; A2DP only; buy a spare. Sellers: tinysineaudio.com; tinyosshop.com; Oz Robotics; Audiophonics (EU); eltim.eu (EU),14.95 each (tinyosshop),fallback (not buying now)
-F2,1,2.4 GHz antenna U.FL (IPEX/MHF1),Confirm connector on the board; U.FL-to-SMA bulkhead if dropouts,3-8,TSA5001 fallback only
-6,1,Capacitor 22 uF >=10 V,Across rail near the BT output board; start 22 uF (review-notes #3),<1,to buy
-7,4,Resistor 33 ohm,Series on BCLK and LRCK from board A (to board B and TSA5001),<1,to buy
-8,1,26-28 AWG hookup wire + M2 screws/standoffs,,8,to buy
-9,1,3D-printed enclosure,No CF-filled filament near antenna,-,to design
-T1,1,8-ch 24 MHz logic analyzer (PulseView),Close to essential,10-15,tool
-T3,1,3.3 V USB-serial adapter (CP2102 / CH340 / FT232),Debug log from GP20 TX (review-notes #11),3-8,tool
-T2,1,PCM5102A I2S DAC board (optional),Hear Pico A I2S before TSA5001 arrives,5-10,optional
+1,2,Adafruit QT Py RP2040 (Adafruit PID 4900),USB audio inputs. Onboard VBUS diode + CC resistors verified from schematic; do not bridge JP2. Sellers: Adafruit; DigiKey; Newark; Jameco; RS; Amazon ASIN B09Q1P8QHP,9.95 each (Adafruit list price),to buy
+2,1,Adafruit ESP32 Feather V2 (original ESP32; Classic BT for A2DP source),Chosen BT output (docs/decisions.md). Check power path on ~4.7 V rail before wiring. Onboard antenna: place near a non-CF wall. M2.5 mounting holes,TBD,to verify then buy
+3,1,Schottky diode >=1 A (SS14 / 1N5817 / MBR120),Shared rail -> Feather USB pin; blocks back-feed into the Feather's own USB-C when a flashing cable is plugged in. Final choice after Feather V2 schematic check,<1,to buy
+4,4,Resistor 33 ohm,Series on BCLK and LRCK at the clock master's pins (one per receiving board),<1,to buy
+5,1,Capacitor 22 uF >=10 V,Bulk on rail near the ESP32 (BT transmit current bursts); start 22 uF (review-notes #3),<1,to buy
+6,3,Capacitor 0.1 uF ceramic,Local decoupling at ESP32 power input and rail junction,<1,to buy
+7,1,Perfboard / protoboard (small),Holds diode + resistors + caps; single split point for clock and power lines,1-3,to buy
+8,1,Silicone hookup wire 26-28 AWG (several colours),Board-to-board wiring; keep I2S runs < ~10 cm,5-8,to buy
+9,1,M2.5 screws + heat-set inserts (small kit),Feather V2 mounting and enclosure lid,5-10,to buy
+10,1,Heat-shrink tubing assortment,Insulating wire joints,3-5,to buy
+11,1,3D-printed enclosure,No CF-filled filament near the antenna. USB-C wall test coupon ready in enclosure/,-,to design
+12,1,Light pipe (optional),Only if a visible status LED is wanted (not red/green-coded),1-3,optional
+T1,1,8-ch 24 MHz logic analyzer (PulseView),Strongly recommended for I2S debugging,10-15,tool
+T2,1,Calipers,Measure QT Py PCB thickness and USB shell height for the enclosure,10-25,tool
+T3,1,Soldering iron + solder + flux,Flux helps a lot on castellated pads,-,tool
+T4,1,Multimeter,Rail voltage; continuity; diode direction,-,tool
+T5,2,USB-C data cables,Hosts and flashing,-,tool
+T6,1,3.3 V USB-serial adapter (CP2102 / CH340 / FT232),Optional: RP2040 debug logs. GP20/GP5 UART goes to the ESP32 link; logs move to a PIO serial pin,3-8,optional
+T7,1,PCM5102A I2S DAC board,Optional: hear the I2S mix before Bluetooth works (SCK jumper to GND),5-10,optional
+F1,2,TinySine TSA5001 BT 5.3 I2S transmitter,Fallback BT output. I2S slave; 48 kHz; A2DP only. Sellers: tinysineaudio.com; tinyosshop.com; Oz Robotics; Audiophonics (EU); eltim.eu (EU),14.95 each (tinyosshop),fallback (not buying now)
+F2,1,2.4 GHz antenna U.FL (IPEX/MHF1),TSA5001 fallback only,3-8,fallback (not buying now)

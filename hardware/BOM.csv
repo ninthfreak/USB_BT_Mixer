@@ -1,7 +1,6 @@
 item,qty,part,notes,approx_cost_usd,status
 1,2,Adafruit QT Py RP2040 (Adafruit PID 4900),USB audio inputs. Onboard VBUS diode + CC resistors verified from schematic; do not bridge JP2. Sellers: Adafruit; DigiKey; Newark; Jameco; RS; Amazon ASIN B09Q1P8QHP,9.95 each (Adafruit list price),to buy
-2,1,Adafruit ESP32 Feather V2 (original ESP32; Classic BT for A2DP source),Chosen BT output (docs/decisions.md). Check power path on ~4.7 V rail before wiring. Onboard antenna: place near a non-CF wall. M2.5 mounting holes,TBD,to verify then buy
-3,1,Schottky diode >=1 A (SS14 / 1N5817 / MBR120),Shared rail -> Feather USB pin; blocks back-feed into the Feather's own USB-C when a flashing cable is plugged in. Final choice after Feather V2 schematic check,<1,to buy
+2,1,Adafruit ESP32 Feather V2 (original ESP32; Classic BT for A2DP source),Chosen BT output (docs/decisions.md). Power: shared rail -> BAT pin directly (no diode; schematic-verified; review-notes #14). Never connect a LiPo. Onboard antenna: place near a non-CF wall. M2.5 mounting holes,TBD,to buy
 4,4,Resistor 33 ohm,Series on BCLK and LRCK at the clock master's pins (one per receiving board),<1,to buy
 5,1,Capacitor 22 uF >=10 V,Bulk on rail near the ESP32 (BT transmit current bursts); start 22 uF (review-notes #3),<1,to buy
 6,3,Capacitor 0.1 uF ceramic,Local decoupling at ESP32 power input and rail junction,<1,to buy

@@ -17,5 +17,5 @@ Decisions made by the owner. Newest first. Reasoning and alternatives live in th
 |---|---|---|
 | Where does mixing happen? | ESP32 as clock master + mixer (hub), or RP2040 A mixes and sends one stream (chain) | The hub gives identical RP2040 boards and no clock mismatch at the transmitter. The chain is easier to extend past two inputs. Mixing quality is identical. |
 | Which USB control channel? | USB MIDI (recommended), WebUSB, HID, USB serial | See the chat analysis; USB MIDI covers the most hosts. |
-| Feather V2 power path | Does it run from the ~4.7 V shared rail without feeding back into its own USB-C? | Schematic check still needed |
+| ~~Feather V2 power path~~ | Resolved: rail → `BAT` pin, no diode | review-notes #14 (schematic-verified) |
 | ESP32-A2DP library features | AVRCP absolute volume, reconnect to last device | Believed supported (~60–80%); not verified |

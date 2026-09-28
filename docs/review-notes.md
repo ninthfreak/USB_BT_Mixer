@@ -102,5 +102,25 @@ Checked against the TinyUSB master branch cloned 2026-09-24:
 ## 13. ESP32 switch: power and pin effects (2026-09-28)
 
 - **Power:** the ESP32 streaming Bluetooth adds roughly 100–150 mA (estimate), more with Wi-Fi. The box total is about 150–300 mA (estimate), still within one USB 2.0 port's 500 mA. Raise `bMaxPower` in each RP2040's USB descriptor to about 300–400 mA.
-- **Feather V2 feed:** shared rail → Schottky diode → Feather `USB` pin, so a flashing cable in the Feather's own USB-C can't back-feed the rail or the hosts. Confirm against the Feather V2 schematic.
+- **Feather V2 feed:** superseded by #14 (rail → `BAT` pin, no diode).
 - **Pins:** the QT Py's only UART pair (GP20 TX / GP5 RX) is needed for the RP2040 → ESP32 control link. RP2040 debug logging moves to a PIO-based serial output on a spare pin. This supersedes #11. `hardware/wiring.md` needs updating once the mixing location is decided.
+
+## 14. Feather V2 power path (verified from Adafruit's schematic, 2026-09-28)
+
+Source: `Adafruit ESP32 Feather V2.sch` from github.com/adafruit/Adafruit-ESP32-Feather-V2-PCB.
+
+| Net | Connected to |
+|---|---|
+| VBUS (Feather's USB-C) | `USB` header pin **directly**, CP2102N USB-serial chip, MCP73831 charger input, Schottky D4 (MBR540) → VHI |
+| VBAT | `BAT` header pin, JST socket, charger output, P-MOSFET Q3 → VHI |
+| VHI | Input to both AP2112 3.3 V regulators |
+| Q3 gate | VBUS (battery path turns off when USB is present) |
+| CC1 / CC2 | 5.1 kΩ each |
+
+**Decision input: feed the shared rail into `BAT`, not `USB`. No external diode.**
+
+- **Feeding `USB` would put the rail on the Feather's own USB-C VBUS.** A laptop plugged in for flashing would then see voltage already present (USB-C sources expect ~0 V before switching on), and an unpowered laptop port would be back-fed.
+- **Feeding `BAT`:** the rail reaches the regulator through Q3 (and its body diode). Nothing reaches VBUS, so flashing cables behave normally. When a flashing cable is plugged in, Q3 switches off and USB powers the ESP32.
+- **Charger behaviour:** with the box powered, the rail (~4.7 V) is above the charger's 4.2 V target, so it doesn't charge. With the box *unpowered* and a flashing cable in the Feather, the charger will source current (set by R4 = 5.1 kΩ, ≈200 mA; calculated from the MCP73831's 1000/R_PROG) into the rail and power the whole box at ≤4.2 V. That's harmless (the charger limits the current) and handy for bench testing.
+- **Limits to respect:** never connect a LiPo to the JST socket. The rail on `BAT` exceeds a LiPo's 4.2 V maximum. The ESP32's battery-voltage input (through the 200 kΩ divider) will read the rail voltage, which is a useful diagnostic.
+- Confidence ~80%. The topology is verified. The charger's reverse behaviour and its absolute-maximum VBAT rating (believed ≥6 V) are from memory.

@@ -124,3 +124,13 @@ Source: `Adafruit ESP32 Feather V2.sch` from github.com/adafruit/Adafruit-ESP32-
 - **Charger behaviour:** with the box powered, the rail (~4.7 V) is above the charger's 4.2 V target, so it doesn't charge. With the box *unpowered* and a flashing cable in the Feather, the charger will source current (set by R4 = 5.1 kΩ, ≈200 mA; calculated from the MCP73831's 1000/R_PROG) into the rail and power the whole box at ≤4.2 V. That's harmless (the charger limits the current) and handy for bench testing.
 - **Limits to respect:** never connect a LiPo to the JST socket. The rail on `BAT` exceeds a LiPo's 4.2 V maximum. The ESP32's battery-voltage input (through the 200 kΩ divider) will read the rail voltage, which is a useful diagnostic.
 - Confidence ~80%. The topology is verified. The charger's reverse behaviour and its absolute-maximum VBAT rating (believed ≥6 V) are from memory.
+
+## 15. Architecture change: ESP32 hub (2026-09-28)
+
+These parts of the handoff no longer apply: RP2040 A as clock master and mixer; the `ROLE_MASTER_LAST` / `ROLE_SLAVE` split; the TSA5001 output.
+
+- **RP2040 firmware:** one role on both boards. USB audio in → I2S slave out, plus the UART control relay. Each board keeps a DIN chain input for future expansion.
+- **RP2040 system clock:** no longer needs to divide evenly into the audio clock, because the RP2040s receive the clock instead of making it. Its only job is to follow BCLK edges reliably (76.8 MHz or 125 MHz both fine; estimate).
+- **ESP32:** I2S0 master (receives QT Py 1) and I2S1 slave on looped-back clocks (receives QT Py 2). The mix, per-input gain and limiter run in ESP32 firmware. The ESP32's audio PLL (APLL) should give an accurate 48 kHz (estimate).
+- **ESP32 I2S DMA buffering** adds latency. Keep the DMA buffers small; to be measured.
+- **Analog input option (if revisited):** a PCM1808 master clock would now come from the ESP32 (which can output a master clock on GPIO0/1/3 only, ~80% confident; none of those is on the Feather's headers). Revisit if needed.

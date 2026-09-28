@@ -21,4 +21,4 @@ Two USB-C inputs (each one a UAC2 sound card) → mixed → one Bluetooth audio 
 | `docs/` | Handoff, review notes, test logs |
 | `hardware/` | BOM (`BOM.csv`), wiring, power notes |
 | `enclosure/` | Enclosure design sources and exported STLs |
-| `firmware/` | Pico SDK + TinyUSB firmware (one image, `ROLE_MASTER_LAST` / `ROLE_SLAVE`) |
+| `firmware/` | RP2040: Pico SDK + TinyUSB, one image for both boards (USB audio in → I2S slave out, UART control relay). ESP32: ESP-IDF (I2S clock master ×2 inputs, mixer, A2DP source, control). |

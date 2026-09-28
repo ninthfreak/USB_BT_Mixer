@@ -19,7 +19,7 @@ The design's limits and extension points in one place. Written 2026-09-25.
 | Sample rate | **48 kHz only** | TSA5001 | Sourced |
 | USB speed | Full speed (12 Mbit/s) | RP2040 | Verified |
 | USB audio bandwidth per input | Stereo 48 kHz at 16 or 24 bits fits easily (≤ 288 bytes per 1 ms frame; full-speed allows up to 1023) | USB 2.0 full-speed isochronous transfers | Calculated |
-| Hosts that play 44.1 kHz | The host OS converts the rate itself; the box only offers 48 kHz | Host OS | Estimate: macOS, Linux and Android do this automatically |
+| Hosts that play 48 kHz material | The host OS converts it to 44.1 kHz itself; the box only offers 44.1 kHz | Host OS | Estimate: macOS, Linux and Android do this automatically |
 | Bluetooth output | **One A2DP link, SBC/AAC/aptX family**, no LE Audio or broadcast (Auracast) | TSA5001 | Sourced (vendor list, not verified) |
 | Bluetooth sinks at once | Presumably 1 | TSA5001 | Estimate |
 | Latency, box's own path | ~2–3 ms | TinyUSB FIFO (~2 ms) + I2S hops (≈21 µs each) | Verified / calculated |

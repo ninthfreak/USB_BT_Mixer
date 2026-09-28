@@ -20,5 +20,6 @@ Decisions made by the owner. Newest first. Reasoning and alternatives live in th
 | ~~Where does mixing happen?~~ | Resolved: ESP32 hub | See the 2026-09-28 entry |
 | ~~Which USB control channel?~~ | Resolved: USB network + self-served page | See the control-channel entry |
 | ~~Feather V2 power path~~ | Resolved: rail → `BAT` pin, no diode | review-notes #14 (schematic-verified) |
+| Feather charger chip (U3) | A: remove U3 (recommended); B: diode; C: 3.3 V into `3V`; D: leave | Adafruit warns against non-battery sources on `BAT` because they destroy the charger. review-notes #17, #19. **Owner to decide.** |
 | ~~ESP32-A2DP library features~~ | Resolved: reconnect yes; volume yes with `A2DPNoVolumeControl` + passthrough handler | review-notes #16 (verified from source) |
 | ~~Sample rate~~ | Not a choice: **44.1 kHz end to end is a constraint** | Stock ESP-IDF's A2DP source offers 44.1 kHz only (verified), and the design has one clock and no resampling. review-notes #16 |

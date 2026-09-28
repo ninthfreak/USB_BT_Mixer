@@ -189,9 +189,9 @@ If the headphones do neither, they adjust their own volume locally, and nothing 
 | Option | Effect | Difficulty | Recommendation |
 |---|---|---|---|
 | **A. Remove the charger chip (U3, SOT-23-5)** from the Feather | Removes both the voltage question and the back-feed. The Feather works normally without it; it only charges batteries. | 2/10 with hot air or two irons; permanent | **Recommended** (not a decision) |
-| B. One Schottky diode, rail → `BAT` | BAT drops by another ~0.3–0.4 V: typically ~4.3 V, range ~3.9–4.9 V. Regulator still has headroom at the low end. The back-feed is blocked | 1/10 | Reduces the concern but doesn't remove it |
+| B. One Schottky diode, rail → `BAT` | BAT drops by another ~0.3–0.4 V: typically ~4.3 V, range ~3.9–4.9 V. Regulator still has headroom at the low end. The back-feed is blocked | 1/10 | Reduces the concern but doesn't remove it. Still a non-battery source on `BAT` with the charger fitted, which Adafruit warns against (#19) |
 | C. External 3.3 V regulator into the Feather's `3V` pin, Feather `EN` pulled low | Charger and `BAT` unused entirely | 3/10 | Works, but the ESP32 then can't be flashed unless the box is powered |
-| D. Leave as is | ~75% fine | 0/10 | Acceptable if you'd rather not modify the board |
+| D. Leave as is | **Against Adafruit's guidance** (#19). Earlier rated ~75% fine; that estimate no longer stands | 0/10 | Not recommended |
 
 ## 18. Rail voltage: derived, not assumed (2026-09-28)
 
@@ -229,3 +229,27 @@ When both hosts are connected, the host with the higher VBUS supplies most or al
 **To verify:** measure the rail with a multimeter on the built box: one host, then both, at idle and while streaming Bluetooth. Record it in `docs/` as a test log.
 
 Sources: [USB Type-C Spec R2.0](https://www.usb.org/sites/default/files/USB%20Type-C%20Spec%20R2.0%20-%20August%202019.pdf); [onsemi NSR0320MW2T1 datasheet](https://www.onsemi.com/download/data-sheet/pdf/nsr0320mw2t1-d.pdf).
+
+## 19. Adafruit's guidance on powering a Feather through `BAT` (2026-09-28)
+
+**Adafruit advises against it.** Their Feather power-management pages carry the same warnings across the family:
+
+- "Do not use alkaline or NiMH batteries and connect to the battery port - this will destroy the LiPoly charger" (and, on several pages, "there's no way to disable the charger").
+- "The Feather is not designed for external power supplies."
+- Their suggested alternatives: USB power (wall adapter or USB battery pack), or a 5 V source wired to a USB cable. Feeding 3.3 V into the `3V` pin is listed as technically possible but **not recommended**.
+
+| Claim | Evidence |
+|---|---|
+| The warnings above appear on Adafruit's Feather power-management pages (ESP32-S2, ESP32-S3, HUZZAH32, RP2040, M0, 32u4 and others) | Sourced: search-result text; learn.adafruit.com is blocked here, so not read directly |
+| The ESP32 Feather V2 page carries the same warning | **Not confirmed.** The V2 text pasted by the owner has a "Danger:" box whose contents were stripped. Very likely the same family text (estimate ~85%) |
+| Why the charger is destroyed | **Not stated by Adafruit.** Unknown whether a 4.25–5.2 V supply triggers the same failure as a 3–4.5 V alkaline pack |
+
+**What this changes:**
+
+- The failure Adafruit names is **the charger chip (U3)**, which is exactly the part #17 flagged. Their warning backs up that concern and replaces my ~75% estimate.
+- **Option A (remove U3)** takes away the part Adafruit says gets destroyed. After removal, "no way to disable the charger" no longer applies. It is still outside Adafruit's supported use; I found no Adafruit statement about a Feather with U3 removed.
+- **Options B and D** leave U3 in place with a non-battery source on `BAT`. Both go against Adafruit's guidance.
+- **Option C** (3.3 V into `3V`, `EN` pulled low) is Adafruit's "not recommended, technically possible" path.
+- **Feeding the Feather's `USB` pin** is Adafruit's closest supported route, but #14 already rejected it: it back-feeds the Feather's own USB-C port.
+
+**Recommendation (not a decision): option A**, now with a documented reason beyond my estimate. Confidence that the Feather runs normally from `BAT` with U3 removed: ~85% (it follows from the schematic, but I haven't seen it reported or endorsed by Adafruit).

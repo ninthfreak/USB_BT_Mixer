@@ -33,7 +33,7 @@ Solder jumpers JP2 (QT Py) and SJ1 (KB2040) join two *different* nets in the sch
 ## Consequences for this design
 
 - On the QT Py, KB2040, and Pro Micro RP2040, the handoff's original power idea works as intended. **Tie the two boards' `+5V` / `RAW` pins together.** The onboard diodes combine both USB supplies and the computers never connect to each other.
-- **The rail is about 4.6–4.8 V**, which is VBUS minus one Schottky drop. The TSA5001 voltage question from the handoff still stands.
+- **The rail is about 4.25–5.2 V, typically ~4.65 V (estimate; review-notes #18)**: the host's VBUS minus cable drop minus one Schottky drop. Measure it on the built box. The TSA5001 voltage question from the handoff still stands.
 - **Each host sees both boards' 10 µF input caps plus the added capacitor.** That's about 20 µF + 22 µF, over the USB 10 µF plug-in limit. Low practical risk (see review-notes #3).
 - **VBUS sensing may not be needed.** With the cable unplugged, the board sees no USB frames, and TinyUSB reports "suspended".
   - Firmware can treat "not mounted or suspended" as "contribute zeros". That's the same behavior the handoff wanted from GPIO24.

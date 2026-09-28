@@ -121,7 +121,7 @@ Source: `Adafruit ESP32 Feather V2.sch` from github.com/adafruit/Adafruit-ESP32-
 
 - **Feeding `USB` would put the rail on the Feather's own USB-C VBUS.** A laptop plugged in for flashing would then see voltage already present (USB-C sources expect ~0 V before switching on), and an unpowered laptop port would be back-fed.
 - **Feeding `BAT`:** the rail reaches the regulator through Q3 (and its body diode). Nothing reaches VBUS, so flashing cables behave normally. When a flashing cable is plugged in, Q3 switches off and USB powers the ESP32.
-- **Charger behaviour:** with the box powered, the rail (~4.7 V) is above the charger's 4.2 V target, so it doesn't charge. With the box *unpowered* and a flashing cable in the Feather, the charger sources ≈200 mA into the rail. **Correction (see #17):** that's probably not enough to run the whole box, so the QT Pys may brown out during bench flashing.
+- **Charger behaviour:** with the box powered, the rail (typically ~4.65 V; range in #18) is above the charger's 4.2 V target, so it doesn't charge. With the box *unpowered* and a flashing cable in the Feather, the charger sources ≈200 mA into the rail. **Correction (see #17):** that's probably not enough to run the whole box, so the QT Pys may brown out during bench flashing.
 - **Limits to respect:** never connect a LiPo to the JST socket. The rail on `BAT` exceeds a LiPo's 4.2 V maximum. The ESP32's battery-voltage input (through the 200 kΩ divider) will read the rail voltage, which is a useful diagnostic.
 - Confidence ~80%. The topology is verified. The charger's reverse behaviour and its absolute-maximum VBAT rating (believed ≥6 V) are from memory.
 
@@ -177,11 +177,11 @@ If the headphones do neither, they adjust their own volume locally, and nothing 
 | Check | Result | Evidence |
 |---|---|---|
 | Path: rail → `BAT` → Q3 P-MOSFET → VHI → AP2112 3.3 V regulator | Works. Q3's gate sits at VBUS (0 V without the Feather's own USB cable), so Q3 turns fully on. | Schematic (verified) |
-| Regulator input limit | Rail 4.6–4.8 V vs AP2112 maximum 6 V. OK. | AP2112 datasheet via search |
-| Regulator headroom | Needs ≥ ~3.55 V in (250 mV dropout). Rail gives ~1.1 V of margin. OK. | Datasheet via search + calculation |
-| Regulator heat | ESP32 streaming ~150–250 mA (estimate) × (4.7 − 3.3 V) ≈ 0.2–0.35 W in a SOT-23-5. Warm but within ratings. The rail's 4.7 V is slightly *better* than USB's 5 V here. | Estimate |
-| Battery-voltage monitor (200 kΩ divider to an ADC pin) | Reads ~2.35 V at the pin with 4.7 V on BAT. Safe; a free rail-voltage readout. | Schematic + calculation |
-| **MCP73831 charger chip (U3) with 4.6–4.8 V on its battery pin** | **Soft spot.** Its absolute-maximum table lists all pins as −0.3 V to (VDD + 0.3) V. Taken literally, that's also exceeded by every battery-powered Feather with no USB (4.2 V battery, VDD = 0), so it can't be the whole story. The chip is designed to sit on a battery while unpowered. But 4.6–4.8 V is 0.4–0.6 V above the 4.2 V it's designed around, and I couldn't reach the full datasheet to check. **~80% harmless (estimate).** | Datasheet row via search; full datasheet blocked |
+| Regulator input limit | Rail ~4.25–5.2 V (#18) vs AP2112 maximum 6 V. OK. | AP2112 datasheet via search |
+| Regulator headroom | Needs ≥ ~3.55 V in (250 mV dropout). Rail gives ~0.7 V of margin at its low end (4.25 V), ~1.1 V typical. OK. | Datasheet via search + calculation |
+| Regulator heat | ESP32 streaming ~150–250 mA (estimate) × (rail − 3.3 V): ≈ 0.2–0.35 W typical, up to ≈ 0.3–0.5 W at the 5.2 V high end, in a SOT-23-5. **Same as the Feather's own USB power:** that path is also VBUS minus one Schottky (D4), so the regulator sees the same voltage either way. Not re-checked against the AP2112's thermal resistance. *(Corrected: an earlier version said the rail was "better than USB's 5 V"; the regulator never sees 5 V from USB either.)* | Estimate + schematic |
+| Battery-voltage monitor (200 kΩ divider to an ADC pin) | Reads half the rail: ~2.1–2.6 V at the pin. Safe; a free rail-voltage readout. | Schematic + calculation |
+| **MCP73831 charger chip (U3) with the rail (~4.25–5.2 V) on its battery pin** | **Soft spot.** Its absolute-maximum table lists all pins as −0.3 V to (VDD + 0.3) V. Taken literally, that's also exceeded by every battery-powered Feather with no USB (4.2 V battery, VDD = 0), so it can't be the whole story. The chip is designed to sit on a battery while unpowered. But the rail is typically ~0.45 V and at worst ~1.0 V above the 4.2 V it's designed around (#18), and I couldn't reach the full datasheet to check. **~75% harmless (estimate; lowered from 80% once the rail's high end was worked out).** | Datasheet row via search; full datasheet blocked |
 | Charger back-feeding the rail when the box is unpowered and a flashing cable is in the Feather | The charger sources ~200 mA (R4 = 5.1 kΩ) into the rail. That's **probably not enough to run the QT Pys too** (box ≈ 150–300 mA), so they may brown out and restart during bench flashing. Harmless but messy. **Corrects #14**, which said it would "power the whole box". The ESP32 itself is fine; it's powered from USB through D4. | Calculation |
 
 **Ways to remove the charger concern:**
@@ -189,6 +189,43 @@ If the headphones do neither, they adjust their own volume locally, and nothing 
 | Option | Effect | Difficulty | Recommendation |
 |---|---|---|---|
 | **A. Remove the charger chip (U3, SOT-23-5)** from the Feather | Removes both the voltage question and the back-feed. The Feather works normally without it; it only charges batteries. | 2/10 with hot air or two irons; permanent | **Recommended** (not a decision) |
-| B. One Schottky diode, rail → `BAT` | BAT drops to ~4.3–4.4 V (still above 4.2 V), and the back-feed is blocked | 1/10 | Reduces the concern but doesn't remove it |
+| B. One Schottky diode, rail → `BAT` | BAT drops by another ~0.3–0.4 V: typically ~4.3 V, range ~3.9–4.9 V. Regulator still has headroom at the low end. The back-feed is blocked | 1/10 | Reduces the concern but doesn't remove it |
 | C. External 3.3 V regulator into the Feather's `3V` pin, Feather `EN` pulled low | Charger and `BAT` unused entirely | 3/10 | Works, but the ESP32 then can't be flashed unless the box is powered |
-| D. Leave as is | ~80% fine | 0/10 | Acceptable if you'd rather not modify the board |
+| D. Leave as is | ~75% fine | 0/10 | Acceptable if you'd rather not modify the board |
+
+## 18. Rail voltage: derived, not assumed (2026-09-28)
+
+**Correction.** Every doc called the shared rail "~4.6–4.8 V". That figure came from the handoff, was never derived, and was presented as the range. It is only a typical value. Where "4.6–4.8 V" or "4.7 V" still appears, read the range below. `HANDOFF.md` is left verbatim as the historical record.
+
+**Rail = host VBUS − cable drop − QT Py diode drop (D1, NSR0320).** The pin is labelled `5V` but is never 5 V from a 5 V host.
+
+| Input | Value | Evidence |
+|---|---|---|
+| Host VBUS (USB-C, vSafe5V) | 4.75–5.5 V allowed; most hosts ~5.0–5.1 V | Range: sourced (USB Type-C spec, via search). Typical: estimate |
+| Cable drop at ~0.15–0.3 A | ~0.05–0.1 V | Estimate |
+| NSR0320 forward drop | 0.24 V typ at 10 mA; 0.5 V max at 900 mA | Sourced (datasheet figures via search; onsemi PDF blocked here) |
+| NSR0320 drop at the box's current (~0.15–0.3 A, estimate) | ~0.3–0.4 V | Estimate, interpolated between the two datasheet points |
+
+| Case | Calculation | Rail |
+|---|---|---|
+| Low: host at spec minimum, long cable, full box load through one diode | 4.75 − 0.1 − 0.4 | **~4.25 V** |
+| Typical | 5.05 − 0.05 − 0.35 | **~4.65 V** |
+| High: host at spec maximum, light load | 5.5 − 0 − 0.3 | **~5.2 V** |
+
+**Result: about 4.25–5.2 V, typically ~4.65 V. Confidence in the range ~75%** (the diode curve between 10 mA and 900 mA and real host voltages are the soft parts).
+
+When both hosts are connected, the host with the higher VBUS supplies most or all of the current (the two diodes act as an OR). Current doesn't split evenly.
+
+**Effects of the wider range:**
+
+| Part | Low end (4.25 V) | High end (5.2 V) |
+|---|---|---|
+| Feather AP2112 regulator (needs ≥ ~3.55 V, max 6 V) | OK | OK |
+| Regulator heat | Lower | Higher, but equal to the Feather's normal USB power (VBUS − D4) at the same host voltage |
+| Feather battery monitor ADC (half the rail) | ~2.1 V | ~2.6 V; safe |
+| MCP73831 charger (U3) battery pin | Concern mostly gone | ~1.0 V above 4.2 V; the concern gets worse (see #17 options) |
+| QT Py's own 3.3 V regulator | Not re-checked here; it's the board's normal USB-powered condition | Same |
+
+**To verify:** measure the rail with a multimeter on the built box: one host, then both, at idle and while streaming Bluetooth. Record it in `docs/` as a test log.
+
+Sources: [USB Type-C Spec R2.0](https://www.usb.org/sites/default/files/USB%20Type-C%20Spec%20R2.0%20-%20August%202019.pdf); [onsemi NSR0320MW2T1 datasheet](https://www.onsemi.com/download/data-sheet/pdf/nsr0320mw2t1-d.pdf).

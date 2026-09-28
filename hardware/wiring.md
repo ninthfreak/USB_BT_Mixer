@@ -75,7 +75,7 @@ Input-only GPIOs 34–39 have no internal pull resistors. That's fine here becau
 | All GND | All GND |
 
 - Each QT Py's `5V` pin sits behind its own onboard Schottky (verified), so the two hosts never connect to each other.
-- The rail is ~4.6–4.8 V (estimate).
+- The rail is about 4.25–5.2 V, typically ~4.65 V (estimate; review-notes #18). It is labelled `5V` on the QT Py but is always below the host's VBUS. Measure it on the built box.
 - **Don't bridge JP2** on either QT Py.
 
 ## Parts at the split point (perfboard)

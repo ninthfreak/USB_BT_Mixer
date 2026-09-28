@@ -24,7 +24,7 @@ The design's limits and extension points in one place. Written 2026-09-25.
 | Bluetooth sinks at once | Presumably 1 | TSA5001 | Estimate |
 | Latency, box's own path | ~2–3 ms | TinyUSB FIFO (~2 ms) + I2S hops (≈21 µs each) | Verified / calculated |
 | Latency, end to end | Dominated by the Bluetooth link and the sink's buffer; unknown until measured | Sink + transmitter | — |
-| Supply rail | ~4.6–4.8 V (USB power minus one Schottky diode) | Board power paths | Verified topology, estimated voltage |
+| Supply rail | About 4.25–5.2 V, typically ~4.65 V (host VBUS minus cable drop minus one Schottky diode) | Board power paths, USB-C VBUS range | Verified topology; voltage is an estimate (review-notes #18) |
 | Power available | Whatever one host's port supplies, since one host may power everything | USB spec: 500 mA for USB 2.0, 900 mA for USB 3.x, 1.5–3 A for USB-C current modes | Sourced (USB spec) |
 | Audio back to hosts (microphone) | None | A2DP carries audio one way only; no capture stream is defined | Verified (design) |
 | Controls | Each host's own volume slider only | Design | — |
@@ -48,7 +48,7 @@ Everything mixed digitally must run on **board A's clock**.
 | Extension | What it takes | Clock change? | Difficulty | Confidence | Main risk |
 |---|---|---|---|---|---|
 | **More USB inputs** | Another RP2040 per input, chained before board B. Each adds 1 frame (≈21 µs). | No | 3/10 per board | ~80% | Board A's clock line fans out further; power budget |
-| **Analog line input** | 3.5 mm jack → PCM1808 ADC (following A's clocks) → board B's chain input; 12.288 MHz master clock from board A; fix sample scaling; gain in firmware | **Yes: 76.8 → 61.44 MHz** | ~4/10 | ~70% | Ground-loop hum; ADC input range on a ~4.7 V supply (unverified) |
+| **Analog line input** | 3.5 mm jack → PCM1808 ADC (following A's clocks) → board B's chain input; 12.288 MHz master clock from board A; fix sample scaling; gain in firmware | **Yes: 76.8 → 61.44 MHz** | ~4/10 | ~70% | Ground-loop hum; ADC input range on a 4.25–5.2 V supply (unverified) |
 | **Analog line output** | PCM5102A DAC wired in parallel with the TSA5001; 3.5 mm jack | No | ~2/10 | ~85% | Hum into mains-powered gear; wired output is ~150–250 ms ahead of Bluetooth |
 | Headphone output | Analog line output + headphone amplifier | No | ~3/10 | ~80% | Same as above |
 | Different Bluetooth output stage | Anything that accepts board A's I2S: ESP32 (SBC only), TS3086-based module (if the firmware suits), nRF5340 (LE Audio) | No | 4–8/10 | 30–60% | Firmware and interop; see `viability-review.md` §3b |

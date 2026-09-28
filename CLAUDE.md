@@ -4,6 +4,7 @@ Two USB-C inputs (each one a UAC2 sound card) → mixed → one Bluetooth audio 
 
 **Read `docs/HANDOFF.md` first.** It is the full design record: architecture, BOM, wiring, firmware plan, milestones, open questions.
 `docs/review-notes.md` lists corrections and risks found after the handoff. Where the two disagree, the review notes win.
+`docs/decisions.md` records the owner's decisions and overrides both.
 
 ## Working preferences
 

@@ -4,6 +4,8 @@ The design's limits and extension points in one place. Written 2026-09-25.
 
 **Baseline design (updated 2026-09-28):** 2× QT Py RP2040 (identical I2S slaves) → ESP32 Feather V2 (I2S clock master, mixer, A2DP source) → Bluetooth. One audio clock domain at 48 kHz, owned by the ESP32.
 
+> **Sample rate is 44.1 kHz end to end** (constraint from ESP-IDF's A2DP source; review-notes #16). Any "48 kHz" below refers to the old TSA5001 baseline.
+>
 > Parts of this page were written for the earlier RP2040-master + TSA5001 baseline. Where it says "board A's clock", read "the ESP32's clock". The TSA5001-specific limits (48 kHz only, codec list) now describe the fallback only; the ESP32 A2DP source is SBC-only, and its sample rate is set in firmware.
 
 **Evidence labels:** *verified* = checked against source, schematic or datasheet; *sourced* = third-party text; *estimate* = my judgment.

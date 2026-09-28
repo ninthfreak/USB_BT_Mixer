@@ -161,8 +161,8 @@ If the headphones do neither, they adjust their own volume locally, and nothing 
 ### Sample rate: **44.1 kHz only** (ESP-IDF limitation)
 
 - ESP-IDF's A2DP **source** advertises SBC at **44.1 kHz only** (`bta_av_co_sbc_caps.samp_freq = A2D_SBC_IE_SAMP_FREQ_44`). Its sink side offers 48 and 44.1 kHz. The library README also says the source expects 44.1 kHz PCM.
-- **Consequence: the whole box should run at 44.1 kHz.** The ESP32 I2S master runs at 44.1 kHz, and the QT Pys advertise 44.1 kHz on USB. The hosts resample 48 kHz material themselves (macOS, Linux and Android do this automatically; estimate ~90%). The box itself still needs no resampling.
-- Alternative: patch ESP-IDF's capability table to also offer 48 kHz. That's possible, but it means maintaining a patched ESP-IDF, and it's untested (~50%). Not recommended.
+- **Consequence: the whole box runs at 44.1 kHz. This is a constraint, not an option.** The ESP32 I2S master runs at 44.1 kHz, and the QT Pys advertise 44.1 kHz on USB. The hosts resample 48 kHz material themselves (macOS, Linux and Android do this automatically; estimate ~90%). The box itself still needs no resampling.
+- Patching ESP-IDF's capability table to offer 48 kHz is an experiment, not a design option: it needs a maintained patched ESP-IDF and is untested (~50%). Resampling 48 → 44.1 kHz in the ESP32 would break the one-clock, no-resampling design rule.
 - The earlier 48 kHz figures (the handoff's TSA5001 plan, the RP2040 clock maths) no longer apply to this design.
 
 ### Other findings

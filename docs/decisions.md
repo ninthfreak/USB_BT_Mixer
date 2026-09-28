@@ -21,4 +21,4 @@ Decisions made by the owner. Newest first. Reasoning and alternatives live in th
 | ~~Which USB control channel?~~ | Resolved: USB network + self-served page | See the control-channel entry |
 | ~~Feather V2 power path~~ | Resolved: rail → `BAT` pin, no diode | review-notes #14 (schematic-verified) |
 | ~~ESP32-A2DP library features~~ | Resolved: reconnect yes; volume yes with `A2DPNoVolumeControl` + passthrough handler | review-notes #16 (verified from source) |
-| **Sample rate: run the box at 44.1 kHz?** | 44.1 kHz end to end (recommended), or patch ESP-IDF for 48 kHz | ESP-IDF's A2DP source offers 44.1 kHz only (verified). Needs the owner's OK. |
+| ~~Sample rate~~ | Not a choice: **44.1 kHz end to end is a constraint** | Stock ESP-IDF's A2DP source offers 44.1 kHz only (verified), and the design has one clock and no resampling. review-notes #16 |

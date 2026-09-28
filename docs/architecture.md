@@ -28,7 +28,7 @@ How the box works end to end. This is the single reference for firmware work. De
 
 ## 2. Audio path
 
-1. **Host → QT Py:** USB audio (UAC2, asynchronous with a feedback endpoint), **44.1 kHz** stereo (pending owner OK; ESP-IDF's A2DP source is 44.1 kHz only, review-notes #16). The audio arrives in 1 ms packets.
+1. **Host → QT Py:** USB audio (UAC2, asynchronous with a feedback endpoint), **44.1 kHz** stereo. **Constraint:** stock ESP-IDF's A2DP source is 44.1 kHz only, and nothing in the box resamples (review-notes #16). The audio arrives in 1 ms packets.
 2. **QT Py buffer:** a TinyUSB FIFO held at about half full, roughly 2 ms (verified: TinyUSB `AUDIO_FEEDBACK_METHOD_FIFO_COUNT`).
 3. **QT Py → ESP32:** a PIO program shifts samples out on DOUT **on the ESP32's BCLK/LRCK edges**. The QT Py never generates audio timing.
 4. **ESP32 input:** I2S0 (master) receives QT Py 1; I2S1 (slave, on looped-back clocks) receives QT Py 2. Both boards follow the same LRCK edges, so their samples arrive aligned.

@@ -28,7 +28,7 @@ How the box works end to end. This is the single reference for firmware work. De
 
 ## 2. Audio path
 
-1. **Host → QT Py:** USB audio (UAC2, asynchronous with a feedback endpoint), 48 kHz stereo. The audio arrives in 1 ms packets.
+1. **Host → QT Py:** USB audio (UAC2, asynchronous with a feedback endpoint), **44.1 kHz** stereo (pending owner OK; ESP-IDF's A2DP source is 44.1 kHz only, review-notes #16). The audio arrives in 1 ms packets.
 2. **QT Py buffer:** a TinyUSB FIFO held at about half full, roughly 2 ms (verified: TinyUSB `AUDIO_FEEDBACK_METHOD_FIFO_COUNT`).
 3. **QT Py → ESP32:** a PIO program shifts samples out on DOUT **on the ESP32's BCLK/LRCK edges**. The QT Py never generates audio timing.
 4. **ESP32 input:** I2S0 (master) receives QT Py 1; I2S1 (slave, on looped-back clocks) receives QT Py 2. Both boards follow the same LRCK edges, so their samples arrive aligned.
@@ -99,7 +99,7 @@ How the box works end to end. This is the single reference for firmware work. De
 | ESP32 I2S1 following I2S0's looped-back clocks | 5/10 | Test early, before the Bluetooth work |
 | Sound card + network adapter as one USB device, across macOS, Linux and Android | 5/10 | Test on each host type early. Fallback: USB MIDI or USB serial for control; the UART protocol is unchanged. |
 | RP2040 RAM/CPU for USB audio + lwIP + web server together | 4/10 | Measure; keep the page small and serve it from flash |
-| ESP32-A2DP library: AVRCP volume, reconnect | Unknown (~60–80% supported) | Check before relying on it |
+| ESP32-A2DP volume handling | Low: supported (verified) | Use `A2DPNoVolumeControl` to avoid applying volume twice; handle passthrough VOL keys (review-notes #16) |
 
 ## 6. Suggested bring-up order
 

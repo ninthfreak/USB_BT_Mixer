@@ -134,3 +134,40 @@ These parts of the handoff no longer apply: RP2040 A as clock master and mixer; 
 - **ESP32:** I2S0 master (receives QT Py 1) and I2S1 slave on looped-back clocks (receives QT Py 2). The mix, per-input gain and limiter run in ESP32 firmware. The ESP32's audio PLL (APLL) should give an accurate 48 kHz (estimate).
 - **ESP32 I2S DMA buffering** adds latency. Keep the DMA buffers small; to be measured.
 - **Analog input option (if revisited):** a PCM1808 master clock would now come from the ESP32 (which can output a master clock on GPIO0/1/3 only, ~80% confident; none of those is on the Feather's headers). Revisit if needed.
+
+## 16. ESP32-A2DP library and ESP-IDF A2DP source: verified from source (2026-09-28)
+
+Sources: `pschatzmann/ESP32-A2DP` at commit 35bace5 (2026-09-22); `espressif/esp-idf` master (2026-09-25), `components/bt/host/bluedroid/btc/profile/std/a2dp/bta_av_co.c`.
+
+### Reconnection: supported
+
+- The last connected headphone address is **saved in flash** (NVS key `src_bda`) on connect, and loaded again at start.
+- `set_auto_reconnect(true, retries)` retries that address after a disconnect and on a periodic heartbeat. When the retries run out, it falls back to scanning.
+- **Scanning only connects to a device your code accepts**, through a name list or `set_ssid_callback(...)`. Our firmware should use the callback to *collect* scan results for the web page rather than auto-accepting.
+- A deliberate `disconnect()` suppresses auto-reconnect. "Forget" = clear the saved address (`clean_last_connection`), plus remove the bond with ESP-IDF's `esp_bt_gap_remove_bond_device` (ESP-IDF API; not checked in this pass).
+
+### Headphone volume buttons: supported, with one fix needed
+
+Headphones report button presses in one of two ways:
+
+| How the headphones report it | What the library does | What our firmware must do |
+|---|---|---|
+| **Absolute volume** (AVRCP 1.4+): the headphones change their own volume and notify the source | Receives the notification, echoes the value back, **and also scales the audio samples itself** (default `A2DPDefaultVolumeControl`) | **Install `A2DPNoVolumeControl`** (`set_volume_control`). Otherwise the volume is applied twice: once in the headphones and again in the ESP32, so it drops off far faster than intended (estimate). Report the level to the page. |
+| **Passthrough VOL_UP / VOL_DOWN keys** (headphones act as a remote) | Passes key codes to `set_avrc_passthru_command_callback` only; **takes no action itself** | Handle the keys: step the box's master gain |
+| Headphones set the *source's* volume directly (rare) | Logged, ignored | Nothing, unless a real headphone needs it |
+
+If the headphones do neither, they adjust their own volume locally, and nothing is needed.
+
+### Sample rate: **44.1 kHz only** (ESP-IDF limitation)
+
+- ESP-IDF's A2DP **source** advertises SBC at **44.1 kHz only** (`bta_av_co_sbc_caps.samp_freq = A2D_SBC_IE_SAMP_FREQ_44`). Its sink side offers 48 and 44.1 kHz. The library README also says the source expects 44.1 kHz PCM.
+- **Consequence: the whole box should run at 44.1 kHz.** The ESP32 I2S master runs at 44.1 kHz, and the QT Pys advertise 44.1 kHz on USB. The hosts resample 48 kHz material themselves (macOS, Linux and Android do this automatically; estimate ~90%). The box itself still needs no resampling.
+- Alternative: patch ESP-IDF's capability table to also offer 48 kHz. That's possible, but it means maintaining a patched ESP-IDF, and it's untested (~50%). Not recommended.
+- The earlier 48 kHz figures (the handoff's TSA5001 plan, the RP2040 clock maths) no longer apply to this design.
+
+### Other findings
+
+- **Headphone latency reporting:** ESP-IDF ≥ 5.3 delivers `ESP_A2D_REPORT_SNK_DELAY_VALUE_EVT` when the headphones report their own delay. The library only logs it, but our firmware can show it on the page. It helps with the latency question.
+- **Codecs:** the library's AAC support is for the *receiving* (sink) side only. The source is SBC.
+- **Build:** usable as an ESP-IDF component (CMakeLists present). It lists `arduino-audio-tools` as a required component despite the README saying there are no other dependencies. That's minor build friction.
+- **Licence ambiguity:** the LICENSE file is Apache-2.0, but a CMakeLists comment says GPLv3. Irrelevant for a personal build; check before distributing anything.

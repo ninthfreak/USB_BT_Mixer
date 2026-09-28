@@ -20,4 +20,5 @@ Decisions made by the owner. Newest first. Reasoning and alternatives live in th
 | ~~Where does mixing happen?~~ | Resolved: ESP32 hub | See the 2026-09-28 entry |
 | ~~Which USB control channel?~~ | Resolved: USB network + self-served page | See the control-channel entry |
 | ~~Feather V2 power path~~ | Resolved: rail → `BAT` pin, no diode | review-notes #14 (schematic-verified) |
-| ESP32-A2DP library features | AVRCP absolute volume, reconnect to last device | Believed supported (~60–80%); not verified |
+| ~~ESP32-A2DP library features~~ | Resolved: reconnect yes; volume yes with `A2DPNoVolumeControl` + passthrough handler | review-notes #16 (verified from source) |
+| **Sample rate: run the box at 44.1 kHz?** | 44.1 kHz end to end (recommended), or patch ESP-IDF for 48 kHz | ESP-IDF's A2DP source offers 44.1 kHz only (verified). Needs the owner's OK. |

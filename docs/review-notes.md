@@ -253,3 +253,48 @@ Sources: [USB Type-C Spec R2.0](https://www.usb.org/sites/default/files/USB%20Ty
 - **Feeding the Feather's `USB` pin** is Adafruit's closest supported route, but #14 already rejected it: it back-feeds the Feather's own USB-C port.
 
 **Recommendation (not a decision): option A**, now with a documented reason beyond my estimate. Confidence that the Feather runs normally from `BAT` with U3 removed: ~85% (it follows from the schematic, but I haven't seen it reported or endorsed by Adafruit).
+
+## 20. Board change: RP2350-USB-C inputs and a Waveshare ESP32 dev kit (2026-09-29)
+
+Both boards changed. Sources: Waveshare's `RP2350-USB-C.pdf` (github.com/waveshareteam/RP2350-USB-C) and `ESP32-DEV-KIT-XX.pdf`, both read directly; Espressif's ESP32 datasheet v5.3.
+
+### Why the ESP32 board changed
+
+The Feather V2 has **no supported way to take a non-battery supply** (#19). Every route was outside Adafruit's guidance or needed board surgery. The owner chose a board designed for rail power instead of picking one of options A–D in #17.
+
+| Check (Waveshare ESP32-DEV-KIT-WROOM-32E-N4) | Result | Evidence |
+|---|---|---|
+| Rail → `VSYS` header pin (J3-19) → MP1605 converter → 3V3 | Works. Schematic notes "VIN: 2.3–5.5 V, Iout max 2 A" against our 4.25–5.2 V rail | Schematic (verified) |
+| Back-feeding its USB-C | **Blocked by D3** (MBR230) between VBUS and VSYS. The rail never reaches its USB-C, so **the ESP32 can be flashed with the box powered** | Schematic (verified) |
+| ETA6098 charger on the same VSYS net | Its input is VSYS and its battery pin sits below that through Q2 — the opposite of the Feather's problem, where the battery pin sat *above* an unpowered input. With no battery fitted it should stay idle | Schematic (verified); idle behaviour is an estimate, ~85%. Its absolute-maximum ratings are unverified |
+| Chip is original ESP32 (Classic BT needed for A2DP) | Yes: ESP32-WROOM-32E. "Bluetooth v4.2 BR/EDR and Bluetooth LE" | ESP32 datasheet v5.3 (verified) |
+| 3.3 V current | Datasheet recommends "500 mA or more"; the MP1605 is rated 2 A | Both datasheets (verified) |
+
+Two onboard uses forced a pin-map redo: **GPIO27** drives the WS2812 RGB LED through R1 (0 Ω) and **GPIO34** carries the battery-voltage divider through R28 (0 Ω). New map in `hardware/wiring.md`.
+
+### Why the input board changed
+
+RAM. The RP2350 has 520 KB against the RP2040's 264 KB, and "USB audio + lwIP + web server on one chip" is the highest firmware risk in `docs/architecture.md`.
+
+| Check (Waveshare RP2350-USB-C) | Result | Evidence |
+|---|---|---|
+| VBUS → header diode | **None.** Both USB-C ports' VBUS connect straight to `VSYS` and the `VSYS` header pin. The schematic contains no diode at all | Schematic (verified) |
+| Consequence | Tying two boards' `VSYS` pins together would connect the two hosts' 5 V rails. **One external Schottky per board is mandatory**, `VSYS` → rail, cathode to the rail | Analysis |
+| CC resistors | 5.1 kΩ on both ports (R5/R6, R10/R13) | Schematic (verified) |
+| Its own regulator | RT9013-33 (500 mA), fed from VBUS *before* our diode, so it keeps full headroom | Schematic (verified) |
+| Flash | W25Q16 = **2 MB**, down from the QT Py's 8 MB. Ample for firmware plus a small page | Schematic (verified); "ample" is an estimate |
+| TinyUSB on RP2350 | Supported: RP2350 platform handling in the rp2040 port and a Pico 2 board file | TinyUSB tree at 4da0a77, 2026-09-24 (verified) |
+| Exposed GPIOs | 15: GPIO0–10 and GPIO26–29, plus 3V3/GND/VSYS. GPIO12/13 (PIO-USB) and GPIO16 (RGB LED) are not on the header, so nothing we use is contended | Schematic (verified) |
+| BOOTSEL / reset | Key1 on QSPI_SS, Key2 on RUN. UF2 flashing unchanged | Schematic (verified) |
+| Erratum RP2350-E9 | Input-mode pull-down latching, redefined as input-buffer leakage (up to ~120 µA), "fixed by documentation". **Doesn't apply to us:** every pin we use is driven and none relies on an internal pull-down | Sourced (Raspberry Pi forum, Hackaday); datasheet not read directly. Confirm at bring-up |
+
+### Accepted costs
+
+- **Two extra diodes.** The owner has them and is comfortable fitting them.
+- **A second USB-C port on each input board, facing into the case.** It sits on the same `VSYS` net, on the host side of our diode, so anything plugged into it lands on that board's VBUS. The owner accepts leaving it unused and unreachable inside the enclosure.
+- **2 MB flash instead of 8 MB.**
+- **The enclosure coupon needs re-measuring**: 33.0 × 17.5 mm (sourced) against the QT Py's 20.7 × 17.8 mm, and the board is castellated, so the mounting approach may change.
+
+### What did not change
+
+Same ESP32 chip, so A2DP/SBC, the 44.1 kHz constraint (#16), the one-clock-domain rule and the whole control-path design stand. The I2S pin numbers on the input board are unchanged (GP26/27/28/29); only the UART moves, from GP20/GP5 to GP4/GP5, which are a real UART1 pair.

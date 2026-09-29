@@ -293,7 +293,7 @@ RAM. The RP2350 has 520 KB against the RP2040's 264 KB, and "USB audio + lwIP + 
 - **Two extra diodes.** The owner has them and is comfortable fitting them.
 - **A second USB-C port on each input board, facing into the case.** It sits on the same `VSYS` net, on the host side of our diode, so anything plugged into it lands on that board's VBUS. The owner accepts leaving it unused and unreachable inside the enclosure.
 - **2 MB flash instead of 8 MB.**
-- **The enclosure coupon needs re-measuring**: 33.0 × 17.5 mm (sourced) against the QT Py's 20.7 × 17.8 mm, and the board is castellated, so the mounting approach may change.
+- **The enclosure coupon needs re-measuring**: 33.0 × 17.5 mm (sourced) against the QT Py's 20.7 × 17.8 mm. The *mounting method* does not change: the QT Py had no mounting holes either (verified from Adafruit's board file), so input boards were always held by the USB-C wall and cradle. Only the cradle dimensions move.
 
 ### What did not change
 

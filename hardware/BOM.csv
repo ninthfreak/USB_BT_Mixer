@@ -7,7 +7,7 @@ item,qty,part,notes,approx_cost_usd,status
 6,3,Capacitor 0.1 uF ceramic,Local decoupling at ESP32 power input and rail junction,<1,to buy
 7,1,Perfboard / protoboard (small),Holds diode + resistors + caps; single split point for clock and power lines,1-3,to buy
 8,1,Silicone hookup wire 26-28 AWG (several colours),Board-to-board wiring; keep I2S runs < ~10 cm,5-8,to buy
-9,1,M2.5 screws + heat-set inserts (small kit),Board mounting and enclosure lid; check the RP2350-USB-C and ESP32 dev-kit hole patterns (the RP2350-USB-C may have none - it is castellated),5-10,to buy
+9,1,M2.5 screws + heat-set inserts (small kit),Enclosure lid, and the ESP32 board if it has holes. The input boards are NOT screw-mounted: neither the QT Py (verified: no holes in Adafruit's board file) nor the RP2350-USB-C; both are held by the USB-C wall + cradle. The Feather V2 had two M2.5 holes; whether the Waveshare ESP32 dev kit does is UNVERIFIED,5-10,to buy
 10,1,Heat-shrink tubing assortment,Insulating wire joints,3-5,to buy
 11,1,3D-printed enclosure,No CF-filled filament near the antenna. USB-C wall test coupon ready in enclosure/ but sized for the QT Py - re-measure for the RP2350-USB-C. Each input board has a second USB-C port facing inward: leave it unused and unreachable,-,to design
 12,1,Light pipe (optional),Only if a visible status LED is wanted (not red/green-coded),1-3,optional

@@ -107,6 +107,11 @@ Host 2 ─USB-C─▶ board 2 VSYS ──▶|── ┘
 - The ESP32 board's ETA6098 charger sits on the same VSYS net. With no battery fitted it should stay idle (estimate ~85%; its absolute-maximum ratings are unverified). Never fit a battery to its GH1.25 connector.
 - **The second USB-C port on each input board is live on `VSYS`.** Anything plugged into it lands on that board's VBUS, on the host side of the diode. Leave both inner ports unused and unreachable inside the case.
 
+## Mounting
+
+- **Input boards are held by the enclosure's USB-C wall and cradle, not screws.** Neither the QT Py RP2040 (verified: no mounting holes in Adafruit's board file) nor the RP2350-USB-C is screw-mounted. This is unchanged by the board swap; only the cradle dimensions change.
+- **ESP32 board:** the Feather V2 had two plated M2.5 holes. Whether the Waveshare dev kit has mounting holes is **unverified** — check the physical board or Waveshare's mechanical drawing.
+
 ## Parts at the split point (perfboard)
 
 - **2 × Schottky diode** (e.g. 1N5817, SS14, or any low-Vf part rated ≥ 1 A): one per input board, `VSYS` → rail.

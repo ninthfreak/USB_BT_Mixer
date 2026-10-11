@@ -60,7 +60,7 @@ All I2S signals land on J3 and both UARTs on J4, so the two harnesses stay separ
 
 Input-only GPIOs 34–39 have no internal pull resistors. That's fine here because every board is always powered together.
 
-Assumed, not verified: GPIO16 and GPIO17 are free because the N4 variant has no PSRAM. Check against the module datasheet before building.
+GPIO16 and GPIO17 are free: the schematic names U1 as **ESP32-WROOM-32E-N4** (no PSRAM, so nothing claims those pins), and both appear on J4 with nothing else attached. ~95% confident; the remaining doubt is only that I haven't read the module datasheet itself.
 
 ## Input board pins (Waveshare RP2350-USB-C, identical on both)
 

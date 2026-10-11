@@ -64,7 +64,9 @@ GPIO16 and GPIO17 are free: the schematic names U1 as **ESP32-WROOM-32E-N4** (no
 
 ## Input board pins (Waveshare RP2350-USB-C, identical on both)
 
-From Waveshare's schematic `RP2350-USB-C.pdf` (github.com/waveshareteam/RP2350-USB-C). The 18-pin header exposes GPIO0–10, GPIO26–29, 3V3, GND and VSYS.
+From Waveshare's schematic `RP2350-USB-C.pdf` (github.com/waveshareteam/RP2350-USB-C). The 18-pin header exposes GPIO0–10, GPIO26–29, 3V3, GND and the raw-VBUS pin.
+
+**Naming trap:** on this board the schematic calls that net `VSYS`, but **the silkscreen label is `5V`** (verified from Waveshare's pinout drawing). Below, "the `5V` pin" means that net. The ESP32 board's equivalent pin *is* silkscreened `VSYS`.
 
 | Signal | GPIO | Direction | Notes |
 |---|---|---|---|
@@ -75,7 +77,7 @@ From Waveshare's schematic `RP2350-USB-C.pdf` (github.com/waveshareteam/RP2350-U
 | UART TX | 4 | Out | UART1 TX → the ESP32 UART RX |
 | UART RX | 5 | In | UART1 RX ← the ESP32 UART TX |
 | Debug serial TX (PIO) | 3 | Out | Optional, to a USB-serial adapter |
-| VBUS sense (optional) | any spare (0, 1, 2, 6–10) | In | From the board's `VSYS` pin via a 10k/20k divider. `VSYS` is raw VBUS here, so no solder jumper is needed. Probably unnecessary |
+| VBUS sense (optional) | any spare (0, 1, 2, 6–10) | In | From the board's `5V` pin via a 10k/20k divider. That pin is raw VBUS here, so no solder jumper is needed. Probably unnecessary |
 
 Not on the header, so no conflict: GPIO12/13 (second USB-C port, PIO-USB), GPIO16 (RGB LED).
 
@@ -83,19 +85,19 @@ Not on the header, so no conflict: GPIO12/13 (second USB-C port, PIO-USB), GPIO1
 
 ## Power
 
-**The RP2350-USB-C has no VBUS diode.** Its USB-C VBUS connects straight to the `VSYS` net and the `VSYS` header pin (verified from the schematic). Both of its USB-C ports share that net. So each input board needs **its own external Schottky** before the shared rail, or the two hosts' 5 V rails would be tied together.
+**The RP2350-USB-C has no VBUS diode.** Its USB-C VBUS connects straight to the `VSYS` net and the header pin silkscreened `5V` (verified from the schematic). Both of its USB-C ports share that net. So each input board needs **its own external Schottky** before the shared rail, or the two hosts' 5 V rails would be tied together.
 
 ```
-Host 1 ─USB-C─▶ board 1 VSYS ──▶|── ┐
+Host 1 ─USB-C─▶ board 1 `5V` ──▶|── ┐
                                     ├── shared rail ──▶ ESP32 VSYS pin (J3-19)
-Host 2 ─USB-C─▶ board 2 VSYS ──▶|── ┘
+Host 2 ─USB-C─▶ board 2 `5V` ──▶|── ┘
                 (D1, D2: your Schottkys, cathode to the rail)
 ```
 
 | From | To |
 |---|---|
-| Input board 1 `VSYS` | D1 anode |
-| Input board 2 `VSYS` | D2 anode |
+| Input board 1 `5V` pin | D1 anode |
+| Input board 2 `5V` pin | D2 anode |
 | D1 + D2 cathodes | Shared rail → ESP32 `VSYS` (J3-19), 22 µF + 0.1 µF near the ESP32 |
 | All GND | All GND |
 
@@ -105,7 +107,22 @@ Host 2 ─USB-C─▶ board 2 VSYS ──▶|── ┘
 - **The ESP32 board's own USB-C is protected:** its VBUS reaches VSYS through D3 (MBR230, onboard). Plugging a laptop into it for flashing does not back-feed the rail past the input boards' diodes, and the rail does not appear on its USB-C. **You can flash the ESP32 with the box powered.**
 - The ESP32 board's MP1605 converter accepts 2.3–5.5 V in (schematic note), covering the whole rail range with ~0.3 V to spare at the top.
 - The ESP32 board's ETA6098 charger sits on the same VSYS net. With no battery fitted it should stay idle (estimate ~85%; its absolute-maximum ratings are unverified). Never fit a battery to its GH1.25 connector.
-- **The second USB-C port on each input board is live on `VSYS`.** Anything plugged into it lands on that board's VBUS, on the host side of the diode. Leave both inner ports unused and unreachable inside the case.
+- **The second USB-C port on each input board is live on that same net.** Anything plugged into it lands on that board's VBUS, on the host side of the diode. Leave both inner ports unused and unreachable inside the case.
+
+## Input board mechanical (from Waveshare's dimensioned drawing)
+
+| Dimension | Value | Evidence |
+|---|---|---|
+| Board | 33.00 × 17.50 mm | Drawing (verified) |
+| Corner radius | R2.00 | Drawing (verified) |
+| USB-C shell width | 8.90 mm (17.50 − 2 × 4.30), centred on the board | Drawing (verified) |
+| USB-C shell centre | X = 8.75 mm from either long edge | Calculated |
+| Header pad pitch | 2.54 mm; first pad 2.88 mm from the end edge; pad centres 1.13 mm in from the long edge | Drawing (verified) |
+| PCB thickness | **MEASURE** (assume 1.6 mm) | — |
+| USB shell height | **MEASURE** (3.26 mm typical) | — |
+| USB shell overhang past the board edge | **MEASURE** (1.03 mm on the QT Py) | — |
+
+**Edge layout:** the `5V`, `GND`, `3V3` and GPIO26–29 pads are all on **one** long edge; GPIO0–10 are on the other. So power and I2S leave one side of the board and the UART leaves the other.
 
 ## Mounting
 
@@ -114,7 +131,7 @@ Host 2 ─USB-C─▶ board 2 VSYS ──▶|── ┘
 
 ## Parts at the split point (perfboard)
 
-- **2 × Schottky diode** (e.g. 1N5817, SS14, or any low-Vf part rated ≥ 1 A): one per input board, `VSYS` → rail.
+- **2 × Schottky diode** (e.g. 1N5817, SS14, or any low-Vf part rated ≥ 1 A): one per input board, the board's `5V` pin → rail.
 - **4 × 33 Ω:** BCLK → board 1, BCLK → board 2, LRCK → board 1, LRCK → board 2. Place them at the ESP32 end.
 - The loop-back wires (GPIO25 → 36, GPIO33 → 39) connect before the resistors, right at the ESP32 board.
 - Keep I2S runs under ~10 cm.

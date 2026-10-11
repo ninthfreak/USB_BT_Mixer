@@ -4,7 +4,7 @@
 
 | Part | State |
 |---|---|
-| Two-port USB-C wall + cradle **test coupon** (`usb_wall_test.scad`) | Models and checks pass. **Cannot be finalised until the boards arrive**: three dimensions need calipers. |
+| Two-port USB-C wall + cradle **test coupon** (`usb_wall_test.scad`) | Models and checks pass. **Cannot be finalised until the boards arrive**: four dimensions need calipers, plus the notches. |
 | Full enclosure | Not started. Waits on the coupon results. |
 
 **Layout decision:** both input ports side by side on one face; the ESP32's own USB-C stays inside (`docs/decisions.md`).
@@ -24,38 +24,29 @@ Rough full-box estimate from those: the ESP32 sets the width, so about **62 × 7
 
 ![Coupon with both boards and clips](img/preview_iso.png)
 
-**What it's for:** a small print (about 59 × 39 × 13 mm) to check the port design before the full box.
+**What it's for:** a small print (about 59 × 37 × 13 mm) to check the port design before the full box.
 
 - Do the USB-C shells line up with the wall openings?
 - Do real cables seat fully?
 - **Do two cable overmolds fit side by side?** This is the main risk of the chosen layout and the reason the coupon prints both ports.
 - Do plug-in and pull-out forces go into the printed parts instead of the boards' solder joints?
 
-**How it holds each board:**
+**How it holds each board.** One retainer does all of it: the **staple**, two pegs dropping into the board's retention notches, joined by a crossbar that bridges over the USB shell, with shoulders resting on the cradle rails.
 
 | Force | Taken by |
 |---|---|
-| Pull-out (cable yanked outward) | The board's front edge presses against the wall's inside face |
-| Push-in (plugging in) | The drop-in clip (`key`), bearing on the whole PCB back edge |
-| Up/down wiggle, front | The USB shell sitting in the wall opening |
-| Up/down, back | The clip's two corner lips over the board top |
-| Side to side | Cradle side rails, flush with the board top so the castellated pads stay reachable for soldering |
+| Pull-out (cable yanked outward) | Peg faces against the notch walls, plus the board's front edge against the wall's inside face |
+| Push-in (plugging in) | Peg faces against the other notch walls |
+| Side to side | Peg sides in the notches, and the cradle rails |
+| Up/down at the port end | Crossbar over the board; the USB shell in the wall opening |
+| Up/down at the inner end | **Nothing — deliberately.** See below |
 
-**The clip has a window.** This board has a second USB-C connector on its inner end, so a plain bar would hit it. The clip is clear from the board top up to above the shell, and solid below, which lets it bear on the full PCB edge rather than just two corners.
+**The inner end is left free.** An earlier version had a drop-in clip there, shaped around the board's unused inner USB-C connector. It is gone. Two reasons:
 
-### The retention notches
+1. **It was redundant.** The staple already takes plug-in force, which was the clip's real job. The clip was never supporting that unused connector — it was a backstop that had to dodge it.
+2. **It was hiding the answer.** With the clip fitted, the coupon could not tell you whether the notches alone can take cable insertion force. That is the open question, so the coupon should test it bare.
 
-The board has two cutouts in its long edges at the port end. The coupon now prints a third part, the **staple**: two pegs that drop into those notches, joined by a crossbar that bridges over the USB shell, with shoulders resting on the cradle rails.
-
-| What the staple does | |
-|---|---|
-| Pull-out and push-in | Peg faces bear on the notch walls, directly in the plane of the PCB |
-| Side to side | Peg sides against the notch sides |
-| Up and down | Crossbar over the board, shoulders on the rails |
-
-That is all three axes from one part, which is why it is worth testing.
-
-**Where this is heading.** In the full box these pegs most likely hang from the **lid** instead of being a loose part. Closing the lid would then retain each board completely, and both the staple and the clip disappear. The coupon prints the staple separately so the notch fit can be felt before committing to that.
+In the full box, the lid holds the inner end down. If the notches disappoint on a real board, the clip is recoverable from git (commit `755abec`).
 
 **Caveats, stated plainly:**
 
@@ -94,8 +85,8 @@ After editing them:
 
 | Setting | Suggestion |
 |---|---|
-| Files | `stl/usb_wall_test_coupon.stl`, `stl/usb_wall_test_key.stl` (**print two**), `stl/usb_wall_test_staple.stl` (**print two**) |
-| Orientation | As exported. The coupon sits on its base; each clip lies on its back with the lips up; each staple lies on its flat face (1.7 mm thick, no overhangs). |
+| Files | `stl/usb_wall_test_coupon.stl`, `stl/usb_wall_test_staple.stl` (**print two**) |
+| Orientation | As exported. The coupon sits on its base; each staple lies on its flat face (1.7 mm thick, no overhangs). **If a peg shears off under plug-in force, reprint the staple standing on end** so the layers run across the load instead of along it. |
 | Supports | None. The port openings and pockets are short bridges. |
 | Material | PLA or PETG for the test. **Not** carbon-fibre-filled (that rule matters most near the antenna in the final box). |
 | Layer height | 0.12–0.16 mm gives cleaner port openings; 0.2 mm is fine for a first look. |
@@ -105,16 +96,16 @@ After editing them:
 
 1. Lower a board into a cradle about 1.5 mm back from the wall.
 2. Slide it forward until the USB shell enters the opening and the board edge touches the wall.
-3. Drop a clip into the two slots behind it, with the inner connector passing through the clip's window.
+3. Drop a staple over it so the pegs enter the retention notches. Does it seat without forcing?
 4. Repeat for the second board.
-5. Drop a staple over each board so its pegs enter the retention notches. Does it seat? Try the boards with the staples only, clips removed — if the staples alone hold the boards in all directions, the full box can use lid pegs and drop the clips entirely.
 5. Plug in several different cables, including your thickest-housing one. Check each:
    - Does it click fully in?
    - Does the board move?
    - Does the plug housing hit the wall before the plug is fully in?
 6. **Plug both ports at once with your two fattest cables.** Do the housings foul each other?
 7. Wiggle a plugged-in cable up, down and sideways. Watch whether the board flexes.
-8. Yank a cable out fast, with and without the staples. Does the staple take the load off the wall?
+8. Yank a cable out fast. Does the staple hold, or does the board try to follow the cable?
+9. **The question this coupon exists to answer:** do the notches alone take plug-in and pull-out force? If yes, the full box hangs these pegs from the lid and needs no loose retainers at all.
 
 ## Tuning parameters
 
@@ -124,16 +115,13 @@ After editing them:
 | Board too tight or loose in the cradle | `fit` (default 0.20 per side) |
 | Shell binds in the opening, or the gap looks sloppy | `hole_c` (default 0.25 per side) |
 | Plug housing hits the wall before the plug is fully in | Raise `om_w` / `om_h` (13.0 × 7.2), or set `mouth_recess` negative |
-| Clip too tight or loose in its slots | `key_fit` (default 0.15) |
-| Clip window rubs the inner connector | `win_c` (default 0.50 per side) |
 | Staple pegs won't enter the notches, or rattle in them | `notch_c` (default 0.15 per face), then `notch_d` / `notch_len` / `notch_dep` from your own calipers |
-| Board rattles up and down at the back | Reduce the gap between the clip lip and the board (`pcb_t + 0.1` in `key()`) |
 
 ## Files
 
 | File | Contents |
 |---|---|
-| `usb_wall_test.scad` | Parametric model. Set `part` to `preview`, `coupon`, `key` or `staple`. |
+| `usb_wall_test.scad` | Parametric model. Set `part` to `preview`, `coupon` or `staple`. |
 | `stl/` | Exported print files |
 | `tests/check_fit.sh` | Collision checks: both cradles, both boards, outer and inner shells, clips, the install path, and the wall web between the two cable pockets. Needs `openscad` and Python `trimesh`. |
 | `img/` | Preview renders |
@@ -145,11 +133,10 @@ test solid is non-empty. Without them an empty solid makes every collision check
 pass for the wrong reason — which has now happened twice in this project, once
 from a modelling bug and once from a probe that was too big.
 
-Four breaks are confirmed to fail the suite:
+Three breaks are confirmed to fail the suite:
 
 | Break | Catches |
 |---|---|
-| Lower `z_rib0` onto the inner shell | `check 5` |
 | Widen `om_w` past the port pitch | `guard 14` |
 | Set `notch_c` negative (peg too big) | `check 20` |
 | Set `notch_dep` to 0 (notches gone) | `guard 17` |

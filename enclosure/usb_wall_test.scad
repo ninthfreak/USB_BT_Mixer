@@ -10,13 +10,18 @@
 //
 // Parts:
 //   coupon() — base, wall with two USB-C openings, two board cradles
-//   key()    — drop-in clip behind one board: takes push-in force on the PCB
-//              corners and holds the back of the board down. Print two.
-//              It has a window for the board's INNER USB-C connector.
+//   staple() — two pegs into the board's retention notches, joined by a
+//              crossbar over the USB shell. Print two. This is the ONLY
+//              retainer: it takes plug-in and pull-out force, side-to-side
+//              and (at the port end) hold-down.
 //
 // Assembly, per board: lower it into the cradle about 1.5 mm back from the
 // wall, slide it forward so the outer USB-C shell enters the opening, then
-// drop a key() into the slots behind it.
+// drop a staple() so its pegs enter the notches.
+//
+// Nothing holds the board's INNER end down. That is deliberate: in the full
+// box the lid does it, and leaving it off here means the coupon tests whether
+// the notches alone can take plug insertion force, which is the open question.
 //
 // NOT tested by this coupon: blocking the inner USB-C port. That port is live
 // on the board's 5V net (hardware/wiring.md), so the full box must make it
@@ -63,8 +68,6 @@ pitch_extra = 3.0;
 /* [Fit — tune with this print] */
 fit       = 0.20;  // board-to-pocket clearance per side
 hole_c    = 0.25;  // shell-to-opening clearance per side
-key_fit   = 0.15;  // key blade play in its slot
-win_c     = 0.50;  // key window clearance around the inner shell, per side
 
 /* [Wall] */
 wall_t    = 2.4;
@@ -83,14 +86,9 @@ base_t      = 2.0;
 side_t      = 2.0;
 ledge_w     = 1.0; // support ledges under the long edges
 
-/* [Key (back retainer)] */
-install_margin = 0.4;                // extra room to lower the board past the shell overhang
-key_t   = usb_over + install_margin; // slot width in Y
-back_t  = 2.0;                       // post material behind the slot
-lip_t   = 1.2;                       // lip thickness over the board top
-lip_len = 1.2;                       // lip reach over the board
-grip_h  = 3.0;                       // key sticks up this far above the posts
-rib_t   = 2.5;                       // key thickness in Y above the board: stiffens the thin blade
+/* [Assembly] */
+install_margin = 0.4;   // extra room to lower the board past the shell overhang
+back_clear     = 2.0;   // material behind the board, to carry the cradle rails
 
 /* [Hidden] */
 $fn = 48;
@@ -105,12 +103,8 @@ z_base_top = -under_clear;
 z_base_bot = -under_clear - base_t;
 y_wall_in  = board_l;
 y_wall_out = board_l + wall_t;
-y_back     = -(key_t + back_t);
+y_back     = -back_clear;
 usb_zc     = pcb_t + usb_h / 2;
-z_shell_top = pcb_t + usb_h;          // top of the inner USB-C shell
-z_rib0      = z_shell_top + win_c;    // stiffening rib starts clear above it
-z_rib1      = z_rib0 + grip_h;
-z_post_top  = z_rib0;                 // posts guide the key up to the rib
 
 // Notch extents in board-local Y (0 = inner edge, board_l = port edge)
 ny1 = board_l - notch_d;
@@ -121,12 +115,6 @@ py1 = ny1 - notch_c;
 bar_z0 = pcb_t + usb_h + 0.6;   // crossbar clears the USB shell
 bar_t  = 2.0;
 bar_z1 = bar_z0 + bar_t;
-
-// Inner-shell window in the key, in board-local X
-win_x0 = usb_cx - usb_w / 2 - win_c;
-win_x1 = usb_cx + usb_w / 2 + win_c;
-// The key bears on the PCB back edge outside that window
-bear_spans = [[0, win_x0], [win_x1, board_w]];
 
 // Outer extents of the whole coupon
 x_lo = -fit - side_t;
@@ -188,25 +176,15 @@ module wall() {
 module cradle(x0) {
     x_in_l  = x0 - fit;
     x_in_r  = x0 + board_w + fit;
-    difference() {
-        union() {
-            // side rails, flush with board top so the castellated pads stay reachable
-            for (xs = [x_in_l - side_t, x_in_r])
-                translate([xs, y_back, z_base_top - eps])
-                    cube([side_t, y_wall_in - y_back + eps, pcb_t - z_base_top + eps]);
-            // ledges under the long edges
-            for (xs = [x_in_l, x0 + board_w - ledge_w])
-                translate([xs, 0, z_base_top - eps])
-                    cube([ledge_w + fit, board_l, -z_base_top + eps]);
-            // taller back posts that hold the key
-            for (xs = [x_in_l - side_t, x_in_r])
-                translate([xs, y_back, z_base_top - eps])
-                    cube([side_t, back_t + key_t, z_post_top - z_base_top + eps]);
-        }
-        // key slots through the back posts
+    union() {
+        // side rails, flush with board top so the castellated pads stay reachable
         for (xs = [x_in_l - side_t, x_in_r])
-            translate([xs - eps, -key_t, z_base_top])
-                cube([side_t + 2 * eps, key_t, z_post_top - z_base_top + 1]);
+            translate([xs, y_back, z_base_top - eps])
+                cube([side_t, y_wall_in - y_back + eps, pcb_t - z_base_top + eps]);
+        // ledges under the long edges
+        for (xs = [x_in_l, x0 + board_w - ledge_w])
+            translate([xs, 0, z_base_top - eps])
+                cube([ledge_w + fit, board_l, -z_base_top + eps]);
     }
 }
 
@@ -225,53 +203,13 @@ module coupon() {
     }
 }
 
-// One key. x0 = that board's left edge. Print two.
-//
-// Cross-section, looking along X at the board centre:
-//
-//   z_rib1  ┌────────┐            rib: full length, thick in Y, grips here
-//           │  rib   │
-//   z_rib0  └────────┘            starts clear above the inner shell
-//              ( )                inner USB-C shell passes through, open
-//   pcb_t   ┌──┐                  lips (only outside the shell span)
-//           │bl│                  lower blade: bears on the WHOLE PCB back edge
-//   base    └──┘
-//
-// Everything between pcb_t and z_rib0 exists only outside the shell span and
-// at the two ends that ride in the post slots.
-module key(x0) {
-    x_in_l = x0 - fit;
-    x_in_r = x0 + board_w + fit;
-    blade  = key_t - key_fit;
-    len    = (x_in_r + side_t) - (x_in_l - side_t) - 0.4;
-    xk     = x_in_l - side_t + 0.2;
-    y0     = -key_t + key_fit / 2;
-    union() {
-        // lower blade: full length, up to the board top. Takes push-in force
-        // across the whole PCB back edge, including under the connector.
-        translate([xk, y0, z_base_top + 0.2])
-            cube([len, blade, pcb_t - (z_base_top + 0.2)]);
-        // end blocks: ride in the post slots, full height
-        for (xs = [xk, x_in_r + 0.0])
-            translate([xs, y0, pcb_t])
-                cube([side_t - 0.2, blade, z_rib1 - pcb_t]);
-        // stiffening rib: full length, clear above the inner shell
-        translate([xk, y0 - (rib_t - blade), z_rib0])
-            cube([len, rib_t, z_rib1 - z_rib0]);
-        // lips over the board top, only outside the shell span
-        for (s = bear_spans)
-            translate([x0 + s[0], y0, pcb_t + 0.1])
-                cube([s[1] - s[0], blade + lip_len, lip_t]);
-    }
-}
-
 // Notch staple: two pegs that drop into the board's retention notches, joined
 // by a crossbar that bridges over the USB shell. Shoulders rest on the cradle
 // rails, so it also holds the board down.
 //
 // In the full box these pegs are expected to hang from the LID instead, which
-// would let the staple and the key both disappear. The coupon prints it as a
-// separate part so the notch fit can be felt before committing to that.
+// would make this a loose part no longer. The coupon prints it separately so
+// the notch fit can be felt before committing to that.
 module staple(x0) {
     x_in_l = x0 - fit;
     x_in_r = x0 + board_w + fit;
@@ -295,7 +233,7 @@ module staple(x0) {
 // Ghost boards and shells, preview only (F5)
 module board_ghost(x0) {
     %color("SteelBlue", 0.5) board_outline(x0, pcb_t);
-    // outer shell (into the wall) and inner shell (through the key window)
+    // outer shell (into the wall) and the unused inner shell
     %color("Silver", 0.6)
         translate([x0 + usb_cx, board_l + usb_over - 7.35, usb_zc])
             rrect(usb_w, usb_h, usb_h / 2, 7.35);
@@ -305,19 +243,16 @@ module board_ghost(x0) {
 }
 
 /* [Output] */
-part = "preview"; // [preview, coupon, key, staple]
+part = "preview"; // [preview, coupon, staple]
 
 if (part == "coupon") {
     translate([0, 0, -z_base_bot]) coupon();       // base on the bed
-} else if (part == "key") {
-    rotate([90, 0, 0]) translate([-x_lo, key_t - key_fit / 2, 0]) key(0);
 } else if (part == "staple") {
     // lie it on its flat face: 1.7 mm thick, no supports
     rotate([90, 0, 0]) translate([-x_lo, -py0, -bar_z1]) staple(0);
 } else {
     coupon();
-    color("DarkOrange") { key(0); key(pitch); }
-    color("MediumBlue") { staple(0); staple(pitch); }
+    color("DarkOrange") { staple(0); staple(pitch); }
     board_ghost(0);
     board_ghost(pitch);
 }

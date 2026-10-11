@@ -39,7 +39,6 @@ module wall_web_probe() {
 // guards: must be NON-empty, else a check below passes for the wrong reason
 if (which == 10) shell_out(0);
 if (which == 11) coupon();
-if (which == 12) key(0);
 if (which == 13) shell_in(0);
 if (which == 14) intersection() { coupon(); wall_web_probe(); }   // wall between pockets exists
 if (which == 16) staple(0);
@@ -49,15 +48,10 @@ if (which == 18) difference() { translate([0,0,0]) cube([bw, bl, pcb_t]); board_
 // collisions: must be empty (or zero-volume contact)
 if (which == 1) intersection() { coupon(); board_solid(0); }
 if (which == 2) intersection() { coupon(); shell_out(0); }
-if (which == 3) intersection() { coupon(); key(0); }
-if (which == 4) intersection() { key(0); board_solid(0); }
-if (which == 5) intersection() { key(0); shell_in(0); }
 if (which == 6) intersection() { coupon(); at_install(0); }
 if (which == 7) intersection() { coupon(); board_solid(pitch); }
 if (which == 8) intersection() { coupon(); shell_out(pitch); }
-if (which == 9) intersection() { key(0); assembly(pitch); }
 if (which == 15) intersection() { coupon(); shell_in(0); }
 if (which == 20) intersection() { staple(0); board_solid(0); }
 if (which == 21) intersection() { staple(0); shell_out(0); }
-if (which == 22) intersection() { staple(0); key(0); }
 if (which == 23) intersection() { staple(0); assembly(pitch); }

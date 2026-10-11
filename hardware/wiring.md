@@ -132,6 +132,9 @@ All verified from the drawing. One unlabelled 1.27 mm dimension near the left ed
 | USB-C shell width | 8.90 mm (17.50 − 2 × 4.30), centred on the board | Drawing (verified) |
 | USB-C shell centre | X = 8.75 mm from either long edge | Calculated |
 | Header pad pitch | 2.54 mm; first pad 2.88 mm from the end edge; pad centres 1.13 mm in from the long edge | Drawing (verified) |
+| **Retention notches** | Two rectangular cutouts, one in each long edge, **at the port end only**: 1.50 mm deep × 2.00 mm long, near edge 3.45 mm from the port edge | Measured off the drawing pixel by pixel, ±0.15 mm. **Waveshare does not dimension them** |
+| Port-end corners | R2.00 (confirmed against the measured profile) | Drawing (verified) |
+| Inner end | **No notches.** What looks like notches there is the row of castellated pads, about 0.5 mm deep | Measured |
 | PCB thickness | **MEASURE** (assume 1.6 mm) | — |
 | USB shell height | **MEASURE** (3.26 mm typical) | — |
 | USB shell overhang past the board edge | **MEASURE** (1.03 mm on the QT Py) | — |

@@ -42,6 +42,17 @@ usb_h    = 3.26;   // MEASURE: shell height (typical top-mount value)
 usb_over = 1.03;   // MEASURE: shell overhang past the board edge (QT Py value)
 usb_cx   = board_w / 2;   // centred, from the drawing
 
+/* [Retention notches — port end only] */
+// Two rectangular cutouts, one in each long edge, near the exposed port end.
+// Waveshare does NOT dimension them; these come from measuring their drawing
+// pixel by pixel, so treat them as +/- 0.15 mm and MEASURE on a real board.
+// The inner end has no notches: what looks like notches there is the row of
+// castellated pads (about 0.5 mm deep).
+notch_d   = 3.45;  // MEASURE: notch's near edge, from the port edge
+notch_len = 2.00;  // MEASURE: length along the board
+notch_dep = 1.50;  // MEASURE: depth into each long edge
+notch_c   = 0.15;  // peg clearance per face
+
 /* [Side-by-side spacing] */
 // Port centre spacing = board_w + 2*fit + side_t + pitch_extra.
 // With pitch_extra = 3.0 that is about 22.9 mm, which clears two overmolds up
@@ -101,6 +112,16 @@ z_rib0      = z_shell_top + win_c;    // stiffening rib starts clear above it
 z_rib1      = z_rib0 + grip_h;
 z_post_top  = z_rib0;                 // posts guide the key up to the rib
 
+// Notch extents in board-local Y (0 = inner edge, board_l = port edge)
+ny1 = board_l - notch_d;
+ny0 = ny1 - notch_len;
+// Peg footprint inside a notch
+py0 = ny0 + notch_c;
+py1 = ny1 - notch_c;
+bar_z0 = pcb_t + usb_h + 0.6;   // crossbar clears the USB shell
+bar_t  = 2.0;
+bar_z1 = bar_z0 + bar_t;
+
 // Inner-shell window in the key, in board-local X
 win_x0 = usb_cx - usb_w / 2 - win_c;
 win_x1 = usb_cx + usb_w / 2 + win_c;
@@ -119,6 +140,19 @@ function p_pitch()  = pitch;
 function p_board()  = [board_w, board_l, pcb_t];
 function p_usb()    = [usb_w, usb_h, usb_over, usb_cx];
 function p_margin() = install_margin;
+function p_notch()  = [notch_d, notch_len, notch_dep];
+function p_peg_z()  = [py0, py1, bar_z1];
+
+// The board outline, notches included. Shared by the preview and the checks.
+module board_outline(x0, h) {
+    difference() {
+        translate([x0, 0, 0]) cube([board_w, board_l, h]);
+        translate([x0 - eps, ny0, -eps])
+            cube([notch_dep + eps, notch_len, h + 2 * eps]);
+        translate([x0 + board_w - notch_dep, ny0, -eps])
+            cube([notch_dep + eps, notch_len, h + 2 * eps]);
+    }
+}
 
 module rrect(w, h, r, d) {
     // rounded rectangle in XZ, centred, extruded along +Y by d
@@ -231,9 +265,36 @@ module key(x0) {
     }
 }
 
+// Notch staple: two pegs that drop into the board's retention notches, joined
+// by a crossbar that bridges over the USB shell. Shoulders rest on the cradle
+// rails, so it also holds the board down.
+//
+// In the full box these pegs are expected to hang from the LID instead, which
+// would let the staple and the key both disappear. The coupon prints it as a
+// separate part so the notch fit can be felt before committing to that.
+module staple(x0) {
+    x_in_l = x0 - fit;
+    x_in_r = x0 + board_w + fit;
+    union() {
+        // pegs, inside the notches
+        translate([x0 + notch_c, py0, 0.15])
+            cube([notch_dep - 2 * notch_c, py1 - py0, pcb_t - 0.15]);
+        translate([x0 + board_w - notch_dep + notch_c, py0, 0.15])
+            cube([notch_dep - 2 * notch_c, py1 - py0, pcb_t - 0.15]);
+        // shoulders: from above the board top out over the cradle rails
+        translate([x_in_l - side_t, py0, pcb_t])
+            cube([(x0 + notch_dep) - (x_in_l - side_t), py1 - py0, bar_z0 - pcb_t]);
+        translate([x0 + board_w - notch_dep, py0, pcb_t])
+            cube([(x_in_r + side_t) - (x0 + board_w - notch_dep), py1 - py0, bar_z0 - pcb_t]);
+        // crossbar, clear above the USB shell
+        translate([x_in_l - side_t, py0, bar_z0])
+            cube([(x_in_r + side_t) - (x_in_l - side_t), py1 - py0, bar_t]);
+    }
+}
+
 // Ghost boards and shells, preview only (F5)
 module board_ghost(x0) {
-    %color("SteelBlue", 0.5) translate([x0, 0, 0]) cube([board_w, board_l, pcb_t]);
+    %color("SteelBlue", 0.5) board_outline(x0, pcb_t);
     // outer shell (into the wall) and inner shell (through the key window)
     %color("Silver", 0.6)
         translate([x0 + usb_cx, board_l + usb_over - 7.35, usb_zc])
@@ -244,15 +305,19 @@ module board_ghost(x0) {
 }
 
 /* [Output] */
-part = "preview"; // [preview, coupon, key]
+part = "preview"; // [preview, coupon, key, staple]
 
 if (part == "coupon") {
     translate([0, 0, -z_base_bot]) coupon();       // base on the bed
 } else if (part == "key") {
     rotate([90, 0, 0]) translate([-x_lo, key_t - key_fit / 2, 0]) key(0);
+} else if (part == "staple") {
+    // lie it on its flat face: 1.7 mm thick, no supports
+    rotate([90, 0, 0]) translate([-x_lo, -py0, -bar_z1]) staple(0);
 } else {
     coupon();
     color("DarkOrange") { key(0); key(pitch); }
+    color("MediumBlue") { staple(0); staple(pitch); }
     board_ghost(0);
     board_ghost(pitch);
 }

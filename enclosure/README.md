@@ -13,7 +13,7 @@
 
 | Board | Size | Source |
 |---|---|---|
-| Waveshare RP2350-USB-C (×2) | 33.00 × 17.50 mm, R2.00 corners. USB-C 8.90 mm wide, centred, **at both ends** | Waveshare dimensioned drawing (verified) |
+| Waveshare RP2350-USB-C (×2) | 33.00 × 17.50 mm, R2.00 corners. USB-C 8.90 mm wide, centred, **at both ends**. **Two retention notches** in the long edges at the port end: 1.50 deep × 2.00 long, 3.45 from the port edge | Size and corners: drawing (verified). Notches: measured off the drawing, ±0.15 mm — Waveshare does not dimension them |
 | Waveshare ESP32-DEV-KIT-WROOM-32E-N4 | 53.80 × 27.94 mm. Four mounting holes at 50.04 × 25.40 mm centres. 19-pin headers, 2.54 mm pitch, 45.72 mm span, rows 24.94 mm apart. USB-C 8.95 mm wide on one short edge; **PCB antenna at the opposite end** | Waveshare dimensioned drawing (verified) |
 
 Rough full-box estimate from those: the ESP32 sets the width, so about **62 × 72 × 20 mm** outside, boards flat, input ports on one short face. That is an estimate, not a model.
@@ -42,6 +42,26 @@ Rough full-box estimate from those: the ESP32 sets the width, so about **62 × 7
 | Side to side | Cradle side rails, flush with the board top so the castellated pads stay reachable for soldering |
 
 **The clip has a window.** This board has a second USB-C connector on its inner end, so a plain bar would hit it. The clip is clear from the board top up to above the shell, and solid below, which lets it bear on the full PCB edge rather than just two corners.
+
+### The retention notches
+
+The board has two cutouts in its long edges at the port end. The coupon now prints a third part, the **staple**: two pegs that drop into those notches, joined by a crossbar that bridges over the USB shell, with shoulders resting on the cradle rails.
+
+| What the staple does | |
+|---|---|
+| Pull-out and push-in | Peg faces bear on the notch walls, directly in the plane of the PCB |
+| Side to side | Peg sides against the notch sides |
+| Up and down | Crossbar over the board, shoulders on the rails |
+
+That is all three axes from one part, which is why it is worth testing.
+
+**Where this is heading.** In the full box these pegs most likely hang from the **lid** instead of being a loose part. Closing the lid would then retain each board completely, and both the staple and the clip disappear. The coupon prints the staple separately so the notch fit can be felt before committing to that.
+
+**Caveats, stated plainly:**
+
+- The notch dimensions are **measured off Waveshare's drawing pixel by pixel**, not dimensioned by them. Call it ±0.15 mm.
+- These are very likely **panel breakaway tabs** from depanelling, not features Waveshare intends as mounting points. That means the edges may be rough and the tolerance is unspecified. A peg sized from the drawing may need filing, or `notch_c` opened up.
+- Verify both on a real board before the full box depends on them.
 
 ![Top view](img/preview_top.png)
 
@@ -74,8 +94,8 @@ After editing them:
 
 | Setting | Suggestion |
 |---|---|
-| Files | `stl/usb_wall_test_coupon.stl`, `stl/usb_wall_test_key.stl` (**print two keys**) |
-| Orientation | As exported. The coupon sits on its base; each clip lies on its back with the lips up. |
+| Files | `stl/usb_wall_test_coupon.stl`, `stl/usb_wall_test_key.stl` (**print two**), `stl/usb_wall_test_staple.stl` (**print two**) |
+| Orientation | As exported. The coupon sits on its base; each clip lies on its back with the lips up; each staple lies on its flat face (1.7 mm thick, no overhangs). |
 | Supports | None. The port openings and pockets are short bridges. |
 | Material | PLA or PETG for the test. **Not** carbon-fibre-filled (that rule matters most near the antenna in the final box). |
 | Layer height | 0.12–0.16 mm gives cleaner port openings; 0.2 mm is fine for a first look. |
@@ -87,12 +107,14 @@ After editing them:
 2. Slide it forward until the USB shell enters the opening and the board edge touches the wall.
 3. Drop a clip into the two slots behind it, with the inner connector passing through the clip's window.
 4. Repeat for the second board.
+5. Drop a staple over each board so its pegs enter the retention notches. Does it seat? Try the boards with the staples only, clips removed — if the staples alone hold the boards in all directions, the full box can use lid pegs and drop the clips entirely.
 5. Plug in several different cables, including your thickest-housing one. Check each:
    - Does it click fully in?
    - Does the board move?
    - Does the plug housing hit the wall before the plug is fully in?
 6. **Plug both ports at once with your two fattest cables.** Do the housings foul each other?
 7. Wiggle a plugged-in cable up, down and sideways. Watch whether the board flexes.
+8. Yank a cable out fast, with and without the staples. Does the staple take the load off the wall?
 
 ## Tuning parameters
 
@@ -104,13 +126,14 @@ After editing them:
 | Plug housing hits the wall before the plug is fully in | Raise `om_w` / `om_h` (13.0 × 7.2), or set `mouth_recess` negative |
 | Clip too tight or loose in its slots | `key_fit` (default 0.15) |
 | Clip window rubs the inner connector | `win_c` (default 0.50 per side) |
+| Staple pegs won't enter the notches, or rattle in them | `notch_c` (default 0.15 per face), then `notch_d` / `notch_len` / `notch_dep` from your own calipers |
 | Board rattles up and down at the back | Reduce the gap between the clip lip and the board (`pcb_t + 0.1` in `key()`) |
 
 ## Files
 
 | File | Contents |
 |---|---|
-| `usb_wall_test.scad` | Parametric model. Set `part` to `preview`, `coupon` or `key`. |
+| `usb_wall_test.scad` | Parametric model. Set `part` to `preview`, `coupon`, `key` or `staple`. |
 | `stl/` | Exported print files |
 | `tests/check_fit.sh` | Collision checks: both cradles, both boards, outer and inner shells, clips, the install path, and the wall web between the two cable pockets. Needs `openscad` and Python `trimesh`. |
 | `img/` | Preview renders |
@@ -120,6 +143,13 @@ After editing them:
 `check_fit.sh` runs *guards* before the collision checks. A guard asserts that a
 test solid is non-empty. Without them an empty solid makes every collision check
 pass for the wrong reason — which has now happened twice in this project, once
-from a modelling bug and once from a probe that was too big. Both breaks are
-reproducible: lower `z_rib0` onto the inner shell, or widen `om_w` past the port
-pitch, and the suite fails.
+from a modelling bug and once from a probe that was too big.
+
+Four breaks are confirmed to fail the suite:
+
+| Break | Catches |
+|---|---|
+| Lower `z_rib0` onto the inner shell | `check 5` |
+| Widen `om_w` past the port pitch | `guard 14` |
+| Set `notch_c` negative (peg too big) | `check 20` |
+| Set `notch_dep` to 0 (notches gone) | `guard 17` |

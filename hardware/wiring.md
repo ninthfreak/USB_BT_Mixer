@@ -109,6 +109,20 @@ Host 2 ─USB-C─▶ board 2 `5V` ──▶|── ┘
 - The ESP32 board's ETA6098 charger sits on the same VSYS net. With no battery fitted it should stay idle (estimate ~85%; its absolute-maximum ratings are unverified). Never fit a battery to its GH1.25 connector.
 - **The second USB-C port on each input board is live on that same net.** Anything plugged into it lands on that board's VBUS, on the host side of the diode. Leave both inner ports unused and unreachable inside the case.
 
+## ESP32 board mechanical (from Waveshare's dimensioned drawing)
+
+| Dimension | Value |
+|---|---|
+| Board | 53.80 × 27.94 mm |
+| Mounting holes | **Four**, at 50.04 mm (X) × 25.40 mm (Y) centres. Diameter not dimensioned — MEASURE |
+| Headers | 19 pins per row, 2.54 mm pitch, 45.72 mm span; rows 24.94 mm apart |
+| USB-C | 8.95 mm wide, on one short edge |
+| Antenna | PCB antenna at the **opposite** short edge from the USB-C |
+
+All verified from the drawing. One unlabelled 1.27 mm dimension near the left edge is not identified; it doesn't affect anything we need.
+
+**Enclosure consequence:** the antenna end must face a wall clear of wiring, diodes and USB cables, and no carbon-fibre-filled filament near it.
+
 ## Input board mechanical (from Waveshare's dimensioned drawing)
 
 | Dimension | Value | Evidence |
@@ -127,7 +141,7 @@ Host 2 ─USB-C─▶ board 2 `5V` ──▶|── ┘
 ## Mounting
 
 - **Input boards are held by the enclosure's USB-C wall and cradle, not screws.** Neither the QT Py RP2040 (verified: no mounting holes in Adafruit's board file) nor the RP2350-USB-C is screw-mounted. This is unchanged by the board swap; only the cradle dimensions change.
-- **ESP32 board:** the Feather V2 had two plated M2.5 holes. Whether the Waveshare dev kit has mounting holes is **unverified** — check the physical board or Waveshare's mechanical drawing.
+- **ESP32 board: four mounting holes**, 50.04 × 25.40 mm centres (verified from the drawing). Hole diameter is not dimensioned; measure before choosing screws or inserts.
 
 ## Parts at the split point (perfboard)
 

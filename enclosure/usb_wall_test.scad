@@ -38,72 +38,15 @@
 // Values marked MEASURE are not in Waveshare's drawing. Check them with
 // calipers on a real board and edit before printing the final enclosure.
 
-/* [Board — Waveshare RP2350-USB-C] */
-board_w = 17.50;   // Waveshare dimensioned drawing
-board_l = 33.00;   // Waveshare dimensioned drawing
-board_r = 2.00;    // corner radius, drawing (cradle is square; this is reference)
-pcb_t   = 1.60;    // MEASURE: PCB thickness (assumed 1.6)
+include <boards.scad>
 
-/* [USB-C receptacles — one at each end, centred] */
-usb_w    = 8.90;   // shell width: board_w - 2*4.30, from the drawing
-usb_h    = 3.26;   // MEASURE: shell height (typical top-mount value)
-// The two connectors differ on the real board (owner, boards in hand):
-usb_over_out = 0.00;   // MEASURED: the EXPOSED port is flush with the board edge
-usb_over_in  = 1.00;   // MEASURE: the inner programming port IS proud
-usb_cx   = board_w / 2;   // centred, from the drawing
-
-/* [Retention notches — port end only] */
-// Two rectangular cutouts, one in each long edge, near the exposed port end.
-// Waveshare does NOT dimension them; these come from measuring their drawing
-// pixel by pixel, so treat them as +/- 0.15 mm and MEASURE on a real board.
-// The inner end has no notches: what looks like notches there is the row of
-// castellated pads (about 0.5 mm deep).
-notch_d   = 3.45;  // MEASURE: notch's near edge, from the port edge
-notch_len = 2.00;  // MEASURE: length along the board
-notch_dep = 1.50;  // MEASURE: depth into each long edge
-notch_c   = 0.15;  // nub clearance per face
-nub_h     = pcb_t; // nub top, flush with the board's top face
-
-/* [Side-by-side spacing] */
-// Port centre spacing = board_w + 2*fit + side_t + pitch_extra.
-// With pitch_extra = 3.0 that is about 22.9 mm, which clears two overmolds up
-// to ~22 mm wide. Lower it to shrink the box; raise it if your fattest cables
-// collide. This is the number the coupon exists to test.
-pitch_extra = 3.0;
-
-/* [Fit — tune with this print] */
-fit       = 0.20;  // board-to-pocket clearance per side
-hole_c    = 0.25;  // shell-to-opening clearance per side
-
-/* [Wall] */
-wall_t    = 2.4;
+/* [Coupon-only] */
 wall_top  = pcb_t + usb_h + 5;   // wall height above board bottom
 wall_pad  = 7;                   // wall overhang past the outer cradle walls
-
-/* [Cable overmold pockets, outer face] */
-om_w = 13.0;       // pocket width  (fits most USB-C overmolds)
-om_h = 7.2;        // pocket height
-om_r = 1.5;        // pocket corner radius
-// How much wall is left in front of the receptacle mouth. This is the dial
-// between a tidy shell-shaped opening and full plug insertion: the plug ends
-// up this far short of bottoming out. 1.0 matches the coupon already printed.
-// Set it to 0 and the pocket goes clean through, leaving an overmold-sized
-// hole instead of a shell-shaped one.
-mouth_recess = 1.00;
-
-/* [Cradle] */
-under_clear = 1.5; // MEASURE: gap under board for underside parts
-base_t      = 2.0;
-side_t      = 2.0;
-ledge_w     = 1.0; // support ledges under the long edges
 
 /* [Assembly] */
 install_margin = 0.4;   // extra room to lower the board past the shell overhang
 back_clear     = 2.0;   // material behind the board, to carry the cradle rails
-
-/* [Hidden] */
-$fn = 48;
-eps = 0.01;
 
 // Derived ------------------------------------------------------------------
 pitch   = board_w + 2 * fit + side_t + pitch_extra;  // board A left edge -> board B left edge
@@ -127,38 +70,11 @@ x_hi = pitch + board_w + fit + side_t;
 wall_x0 = x_lo - wall_pad;
 wall_x1 = x_hi + wall_pad;
 
-// Accessors so tests/fit_checks.scad never duplicates these numbers.
-// OpenSCAD's `use <>` imports functions and modules, but not variables.
+// Coupon-specific accessors. Board numbers come from boards.scad, which the
+// checks include directly, so only coupon geometry needs exporting here.
 function p_pitch()  = pitch;
-function p_board()  = [board_w, board_l, pcb_t];
-function p_usb()    = [usb_w, usb_h, usb_over_out, usb_cx, usb_over_in];
-function p_margin() = install_margin;
-function p_notch()  = [notch_d, notch_len, notch_dep];
 function p_nub()    = [notch_c, nub_h];
 function p_pocket() = [om_w, om_h, mouth_recess, wall_t];
-
-// The board outline, notches included. Shared by the preview and the checks.
-module board_outline(x0, h) {
-    difference() {
-        translate([x0, 0, 0]) cube([board_w, board_l, h]);
-        translate([x0 - eps, ny0, -eps])
-            cube([notch_dep + eps, notch_len, h + 2 * eps]);
-        translate([x0 + board_w - notch_dep, ny0, -eps])
-            cube([notch_dep + eps, notch_len, h + 2 * eps]);
-    }
-}
-
-module rrect(w, h, r, d) {
-    // rounded rectangle in XZ, centred, extruded along +Y by d
-    // hull of corner circles: stays valid when r = h/2 (stadium shape),
-    // where offset() of a zero-height square would produce nothing
-    rr = min(r, w / 2, h / 2);
-    rotate([-90, 0, 0])
-        linear_extrude(d)
-            hull()
-                for (sx = [-1, 1], sz = [-1, 1])
-                    translate([sx * (w / 2 - rr), sz * (h / 2 - rr)]) circle(rr);
-}
 
 module wall() {
     difference() {
@@ -217,14 +133,10 @@ module coupon() {
 
 // Ghost boards and shells, preview only (F5)
 module board_ghost(x0) {
-    %color("SteelBlue", 0.5) board_outline(x0, pcb_t);
+    %color("SteelBlue", 0.5) rp_outline(x0, pcb_t);
     // outer shell (into the wall) and the unused inner shell
-    %color("Silver", 0.6)
-        translate([x0 + usb_cx, board_l + usb_over_out - 7.35, usb_zc])
-            rrect(usb_w, usb_h, usb_h / 2, 7.35);
-    %color("Silver", 0.6)
-        translate([x0 + usb_cx, -usb_over_in, usb_zc])
-            rrect(usb_w, usb_h, usb_h / 2, 7.35);
+    %color("Silver", 0.6) rp_shell(x0, "out");
+    %color("Silver", 0.6) rp_shell(x0, "in");
 }
 
 /* [Output] */

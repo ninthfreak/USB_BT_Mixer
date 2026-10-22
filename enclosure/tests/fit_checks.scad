@@ -1,14 +1,12 @@
 // Interference checks for usb_wall_test.scad. Run via tests/check_fit.sh.
 // Board numbers come from the model itself through p_*() accessors, so there
 // is nothing to keep in sync by hand.
+include <../boards.scad>
 use <../usb_wall_test.scad>
 which = 0;
 
 pitch = p_pitch();
-bw = p_board()[0]; bl = p_board()[1]; pcb_t = p_board()[2];
-usb_w = p_usb()[0]; usb_h = p_usb()[1]; usb_over_out = p_usb()[2];
-usb_cx = p_usb()[3]; usb_over_in = p_usb()[4];
-notch_d = p_notch()[0]; notch_len = p_notch()[1]; notch_dep = p_notch()[2];
+bw = board_w; bl = board_l;
 notch_c = p_nub()[0]; nub_h = p_nub()[1];
 om_w = p_pocket()[0]; mouth_recess = p_pocket()[2]; wall_t = p_pocket()[3];
 // front face of the overmold pocket, derived - do not hand-compute this
@@ -18,18 +16,16 @@ usb_zc = pcb_t + usb_h / 2;
 SWEEP = 25;   // how far up the board is lifted for the straight-down drop test
 
 // the real outline, notches included — shared with the model
-module board_solid(x0)  { board_outline(x0, pcb_t); }
-module shell_out(x0)    { translate([x0 + usb_cx, bl + usb_over_out - 7.35, usb_zc])
-                              rrect(usb_w, usb_h, usb_h / 2, 7.35); }
-module shell_in(x0)     { translate([x0 + usb_cx, -usb_over_in, usb_zc])
-                              rrect(usb_w, usb_h, usb_h / 2, 7.35); }
+module board_solid(x0)  { rp_outline(x0, pcb_t); }
+module shell_out(x0)    { rp_shell(x0, "out"); }
+module shell_in(x0)     { rp_shell(x0, "in"); }
 module assembly(x0)     { board_solid(x0); shell_out(x0); shell_in(x0); }
 
 // The volume swept by the board as it is lowered straight down into place.
 // The shells are convex, so hull(shape, shape raised) is exactly their sweep.
 // If this is clear of the coupon, the board drops in without sliding.
 module drop_sweep(x0) {
-    board_outline(x0, pcb_t + SWEEP);
+    rp_outline(x0, pcb_t + SWEEP);
     hull() { shell_out(x0); translate([0, 0, SWEEP]) shell_out(x0); }
     hull() { shell_in(x0);  translate([0, 0, SWEEP]) shell_in(x0); }
 }

@@ -4,10 +4,45 @@
 
 | Part | State |
 |---|---|
-| Two-port USB-C wall + cradle **test coupon** (`usb_wall_test.scad`) | One printed part. Models and checks pass. **Dimensions still carry guesses** — see "Measure these". |
-| Full enclosure | Not started. Waits on the coupon results. |
+| Two-port USB-C wall + cradle **test coupon** (`usb_wall_test.scad`) | One printed part. Printed and fitted by the owner. |
+| **Full enclosure** (`box.scad`) | Base + lid modelled, checks pass. **Dimensions still carry guesses** — see "Measure these". Not printed. |
+| Shared dimensions (`boards.scad`) | Single source for every board number and enclosure fit value. |
 
 **Layout decision:** both input ports side by side on one face; the ESP32's own USB-C stays inside (`docs/decisions.md`).
+
+## Full enclosure
+
+![Box, lid lifted](img/box_open.png)
+
+**Layout** (`docs/decisions.md`, 2026-10-22): everything mounts to the base. Two RP2350 boards in cradles at the front, ESP32 flat behind them on four standoffs. The lid carries no board — its only job is to press the RP boards down and close the box.
+
+| | |
+|---|---|
+| Outside size | about **64.6 × 79.7 × 15.2 mm** |
+| Halves held by | 4 × M3 self-tapping screws into printed bosses, 2.5 mm pilots |
+| ESP32 held by | 4 screws into standoffs, through its own mounting holes. 2.1 mm pilots, sized for M2.5 |
+| RP boards held by | Nubs in the edge notches (fore/aft and sideways) + lid press posts (down) |
+| Antenna | At a back corner, over empty space. **Keep the wiring loom on the ESP32's USB-C side** |
+
+### Where the lid is allowed to touch
+
+The RP2350's castellated pads run 2.88–23.20 mm from the inner edge, so anything pressing on the board must stay in the pad-free zones: the inner 2.88 mm and the port-end 9.8 mm. Four press posts per board sit inside those, clear of both USB-C shells and of the retention notches.
+
+A check enforces this: `pad_zone()` models the strip where pads — and therefore your soldered wires — live, and the lid must not intersect it. Widening a press pad into that strip fails the suite.
+
+### Why the ESP32 is not on the lid
+
+It was going to be, inverted on four standoffs. Keeping it on the base is simpler: the lid carries no wiring, so lifting it does not drag the ESP32 and its loom out of the box. Nothing stacks, which also keeps the antenna clear without any thought about what is underneath it.
+
+### Known soft spots
+
+| Item | Status |
+|---|---|
+| ESP32 mounting hole diameter | **MEASURE.** 2.6 mm assumed (M2.5). The standoff pilots follow from it |
+| ESP32 tallest component (`esp_top_h`) | **MEASURE.** 5.0 mm assumed, probably the BAT connector. This sets the box height |
+| Self-tapping thread life | M3 into printed PLA lasts perhaps 10–20 cycles. You will open this box a lot during firmware bring-up |
+| Lid stiffness | 2.4 mm over a ~75 mm span, supported at four corners. The press posts push back; if the lid bows, thicken it or add a fifth boss |
+| Service gap | 6 mm between the RP boards and the ESP32 for wiring and the inline diodes, resistors and caps. No perfboard fits — the small parts go inline in the loom |
 
 ## Board dimensions in hand
 
@@ -136,9 +171,12 @@ After editing:
 
 | File | Contents |
 |---|---|
-| `usb_wall_test.scad` | Parametric model. Set `part` to `preview` or `coupon`. |
-| `stl/` | Exported print file |
-| `tests/check_fit.sh` | Collision checks, including a straight-down drop test. Needs `openscad` and Python `trimesh`. |
+| `usb_wall_test.scad` | Port test coupon. Set `part` to `preview` or `coupon`. |
+| `stl/` | Exported print files: `box_base.stl`, `box_lid.stl`, `usb_wall_test_coupon.stl` |
+| `box.scad` | Full enclosure. Set `part` to `preview`, `base`, `lid` or `open`. |
+| `boards.scad` | Shared board dimensions and enclosure fit values. Edit MEASURE values **here only**. |
+| `tests/check_fit.sh` | Coupon collision checks, including a straight-down drop test. |
+| `tests/check_box.sh` | Enclosure collision checks: 9 guards, 19 collisions. Takes a couple of minutes. |
 | `img/` | Preview renders |
 
 ### A note on the guards
@@ -158,6 +196,14 @@ board can be lowered in without sliding. Breaks confirmed to fail the suite:
 | Set `notch_c` negative (nub too big) | `check 1`, `check 7`, `check 24`, `check 25` |
 | Set `notch_dep` to 0 (notches gone) | `guard 17`, `guard 19` |
 | Widen `om_w` past the port pitch | `guard 14` |
+
+And the enclosure suite (`check_box.sh`, 9 guards + 19 collisions, a couple of minutes to run):
+
+| Break | Catches |
+|---|---|
+| Extend an inner press pad over the castellated pads | `check 27`, `check 28` |
+| Widen a press pad over a USB-C shell | `check 21`–`check 24` |
+| Make `usb_over_out` proud (port wall blocks the drop) | `check 17`, `check 18` |
 
 The wall-web probe has now been wrong three times — too big, then spanning the
 whole wall, then left behind when the pocket moved. It derives its position

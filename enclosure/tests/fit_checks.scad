@@ -6,17 +6,22 @@ which = 0;
 
 pitch = p_pitch();
 bw = p_board()[0]; bl = p_board()[1]; pcb_t = p_board()[2];
-usb_w = p_usb()[0]; usb_h = p_usb()[1]; usb_over = p_usb()[2]; usb_cx = p_usb()[3];
+usb_w = p_usb()[0]; usb_h = p_usb()[1]; usb_over_out = p_usb()[2];
+usb_cx = p_usb()[3]; usb_over_in = p_usb()[4];
 notch_d = p_notch()[0]; notch_len = p_notch()[1]; notch_dep = p_notch()[2];
 notch_c = p_nub()[0]; nub_h = p_nub()[1];
+om_w = p_pocket()[0]; mouth_recess = p_pocket()[2]; wall_t = p_pocket()[3];
+// front face of the overmold pocket, derived - do not hand-compute this
+pocket_y0 = bl + usb_over_out + mouth_recess;
+pocket_d  = (bl + wall_t) - pocket_y0;
 usb_zc = pcb_t + usb_h / 2;
 SWEEP = 25;   // how far up the board is lifted for the straight-down drop test
 
 // the real outline, notches included — shared with the model
 module board_solid(x0)  { board_outline(x0, pcb_t); }
-module shell_out(x0)    { translate([x0 + usb_cx, bl + usb_over - 7.35, usb_zc])
+module shell_out(x0)    { translate([x0 + usb_cx, bl + usb_over_out - 7.35, usb_zc])
                               rrect(usb_w, usb_h, usb_h / 2, 7.35); }
-module shell_in(x0)     { translate([x0 + usb_cx, -usb_over, usb_zc])
+module shell_in(x0)     { translate([x0 + usb_cx, -usb_over_in, usb_zc])
                               rrect(usb_w, usb_h, usb_h / 2, 7.35); }
 module assembly(x0)     { board_solid(x0); shell_out(x0); shell_in(x0); }
 
@@ -36,8 +41,9 @@ module notch_vol(x0)    { translate([x0, bl - notch_d - notch_len, 0])
 // pocket's Y band: a probe spanning the whole wall survives on solid material
 // behind the pockets and passes for the wrong reason.
 module wall_web_probe() {
-    translate([usb_cx + pitch / 2 - 0.25, bl + usb_over + 0.2, usb_zc - 0.25])
-        cube([0.5, 0.5, 0.5]);
+    d = min(0.5, pocket_d / 2);
+    translate([usb_cx + pitch / 2 - 0.25, pocket_y0 + pocket_d / 4, usb_zc - 0.25])
+        cube([0.5, d, 0.5]);
 }
 
 // guards: must be NON-empty, else a check below passes for the wrong reason

@@ -16,9 +16,11 @@
 // side-to-side. No loose clips.
 //
 // Assembly, per board: drop it STRAIGHT DOWN into the cradle so the notches
-// land over the nubs. Nothing slides. For that to work the port opening is
-// slotted open to the top of the wall, so the USB-C shell drops in from above;
-// in the full box the lid caps that slot.
+// land over the nubs. Nothing slides, and nothing needs to thread into the
+// wall: the EXPOSED port's shell is flush with the board edge (measured on the
+// real board), so the port opening stays a closed hole in a solid wall.
+// If a future board has a proud outer shell, that opening has to be slotted
+// open to the top again — see commit a5fbb47.
 //
 // Nothing holds the board DOWN. That is deliberate: the lid does it in the
 // full box, and leaving it off here keeps the coupon to one printed part and
@@ -45,7 +47,9 @@ pcb_t   = 1.60;    // MEASURE: PCB thickness (assumed 1.6)
 /* [USB-C receptacles — one at each end, centred] */
 usb_w    = 8.90;   // shell width: board_w - 2*4.30, from the drawing
 usb_h    = 3.26;   // MEASURE: shell height (typical top-mount value)
-usb_over = 1.03;   // MEASURE: shell overhang past the board edge (QT Py value)
+// The two connectors differ on the real board (owner, boards in hand):
+usb_over_out = 0.00;   // MEASURED: the EXPOSED port is flush with the board edge
+usb_over_in  = 1.00;   // MEASURE: the inner programming port IS proud
 usb_cx   = board_w / 2;   // centred, from the drawing
 
 /* [Retention notches — port end only] */
@@ -80,7 +84,12 @@ wall_pad  = 7;                   // wall overhang past the outer cradle walls
 om_w = 13.0;       // pocket width  (fits most USB-C overmolds)
 om_h = 7.2;        // pocket height
 om_r = 1.5;        // pocket corner radius
-mouth_recess = 0;  // pocket floor distance in front of receptacle mouth
+// How much wall is left in front of the receptacle mouth. This is the dial
+// between a tidy shell-shaped opening and full plug insertion: the plug ends
+// up this far short of bottoming out. 1.0 matches the coupon already printed.
+// Set it to 0 and the pocket goes clean through, leaving an overmold-sized
+// hole instead of a shell-shaped one.
+mouth_recess = 1.00;
 
 /* [Cradle] */
 under_clear = 1.5; // MEASURE: gap under board for underside parts
@@ -122,10 +131,11 @@ wall_x1 = x_hi + wall_pad;
 // OpenSCAD's `use <>` imports functions and modules, but not variables.
 function p_pitch()  = pitch;
 function p_board()  = [board_w, board_l, pcb_t];
-function p_usb()    = [usb_w, usb_h, usb_over, usb_cx];
+function p_usb()    = [usb_w, usb_h, usb_over_out, usb_cx, usb_over_in];
 function p_margin() = install_margin;
 function p_notch()  = [notch_d, notch_len, notch_dep];
 function p_nub()    = [notch_c, nub_h];
+function p_pocket() = [om_w, om_h, mouth_recess, wall_t];
 
 // The board outline, notches included. Shared by the preview and the checks.
 module board_outline(x0, h) {
@@ -159,12 +169,8 @@ module wall() {
             translate([cx, y_wall_in - eps, usb_zc])
                 rrect(usb_w + 2 * hole_c, usb_h + 2 * hole_c,
                       (usb_h + 2 * hole_c) / 2, wall_t + 2 * eps);
-            // drop slot: open from the opening up to the wall top, so the
-            // shell can come straight down into it. The lid caps this.
-            translate([cx - (usb_w + 2 * hole_c) / 2, y_wall_in - eps, usb_zc])
-                cube([usb_w + 2 * hole_c, wall_t + 2 * eps, wall_top - usb_zc + eps]);
             // overmold pocket; floor sits mouth_recess in front of the receptacle mouth
-            pocket_d = y_wall_out - (y_wall_in + usb_over + mouth_recess);
+            pocket_d = y_wall_out - (y_wall_in + usb_over_out + mouth_recess);
             if (pocket_d > 0)
                 translate([cx, y_wall_out - pocket_d, usb_zc])
                     rrect(om_w, om_h, om_r, pocket_d + eps);
@@ -214,10 +220,10 @@ module board_ghost(x0) {
     %color("SteelBlue", 0.5) board_outline(x0, pcb_t);
     // outer shell (into the wall) and the unused inner shell
     %color("Silver", 0.6)
-        translate([x0 + usb_cx, board_l + usb_over - 7.35, usb_zc])
+        translate([x0 + usb_cx, board_l + usb_over_out - 7.35, usb_zc])
             rrect(usb_w, usb_h, usb_h / 2, 7.35);
     %color("Silver", 0.6)
-        translate([x0 + usb_cx, -usb_over, usb_zc])
+        translate([x0 + usb_cx, -usb_over_in, usb_zc])
             rrect(usb_w, usb_h, usb_h / 2, 7.35);
 }
 

@@ -24,6 +24,8 @@ Rough full-box estimate: the ESP32 sets the width, so about **62 × 72 × 20 mm*
 
 ![Coupon with both boards dropped in](img/preview_iso.png)
 
+The wall is solid, the boards drop straight down onto the nubs, and their flush outer shells sit against the wall's inner face.
+
 **What it's for:** a small print (about 59 × 37 × 13 mm) to check the port design before the full box.
 
 - Do the USB-C shells line up with the wall openings?
@@ -46,13 +48,25 @@ Two nubs rise from the cradle floor into the board's edge notches, flush with th
 
 This replaces two earlier attempts, both now deleted: a drop-in clip at the inner end (commit `755abec`), and a "staple" of pegs dropped into the notches from above (commit `730c92e`). Both are recoverable from git if needed.
 
-### Why the wall is three pillars
+### The wall stays a solid piece
 
-Fixed nubs mean the board must come **straight down** — it cannot slide forward into a closed hole, because the notch would have to travel over the nub through solid PCB. Any nub short enough to allow the slide leaves about 1.5 mm of play afterwards, which defeats the point.
+Fixed nubs mean the board must come **straight down** — it cannot slide forward, because the notch would have to travel over the nub through solid PCB.
 
-So each port opening is **slotted open to the top of the wall**, and the USB-C shell drops in from above. That leaves the wall as three pillars on the coupon. In the full box the lid caps the slots and the openings become closed holes again.
+That would normally force the port opening to be slotted open at the top so a protruding shell could drop in. It doesn't here: **on the real board the exposed port's shell is flush with the board edge** (owner, boards in hand). Only the inner programming port is proud. A flush shell never has to thread into the wall, so the opening stays a closed, shell-shaped hole in a solid wall, and the board still drops straight down.
 
-The cost is that until the lid is on, only the lower half of each opening guides the plug. The alternative considered was a separate front face plate fitted after the boards; that keeps closed holes at the price of an extra part and joint.
+The two overhangs are now separate parameters, `usb_over_out` (0.00, measured) and `usb_over_in` (1.00, still to measure). The drop test encodes the dependency: set `usb_over_out` back to a proud value and it fails, because the closed wall would then block the board.
+
+### How deep the plug can go
+
+With a flush receptacle, the wall sits in front of the connector mouth, so a plug stops that far short of bottoming out. `mouth_recess` is the dial:
+
+| `mouth_recess` | Result |
+|---|---|
+| 1.00 (current) | 1 mm of wall in front, shell-shaped opening — **the same geometry as the coupon already printed** |
+| smaller | Plug seats deeper, less wall left around the opening |
+| 0 | Pocket goes clean through: full insertion, but the opening becomes overmold-sized rather than shell-shaped |
+
+**Open question:** did a cable fully click home on the coupon you printed? That print had the same 1 mm of wall in front. If yes, leave `mouth_recess` alone. If a cable felt short or loose, drop it to 0.6 and reprint just the wall end.
 
 ## Measure these
 
@@ -62,7 +76,8 @@ The boards are in hand, so these can stop being guesses. Each is a parameter at 
 |---|---|---|
 | `pcb_t` | 1.60 mm (assumed) | Board thickness, away from any parts |
 | `usb_h` | 3.26 mm (typical top-mount shell) | USB-C shell height, board top to shell top |
-| `usb_over` | 1.03 mm (the QT Py's value) | How far the shell overhangs the board edge |
+| `usb_over_out` | **0.00 mm (measured: flush)** | Done |
+| `usb_over_in` | 1.00 mm (assumed) | How far the inner programming port's shell overhangs |
 | `under_clear` | 1.5 mm (assumed) | Tallest part on the board's underside, if any |
 | `notch_dep` | 1.50 mm (pixel-measured) | Notch depth into the long edge |
 | `notch_len` | 2.00 mm (pixel-measured) | Notch length along the board |
@@ -87,7 +102,7 @@ After editing:
 |---|---|
 | File | `stl/usb_wall_test_coupon.stl` — one part, nothing loose |
 | Orientation | As exported, sitting on its base |
-| Supports | None. The port openings are now slots open to the top, so there is nothing to bridge |
+| Supports | None. The port openings are short bridges, about 9 mm |
 | Material | PLA or PETG for the test. **Not** carbon-fibre-filled (that rule matters most near the antenna in the final box) |
 | Layer height | 0.12–0.16 mm. The nubs are 1.2 × 1.7 mm in plan, so fine layers matter more than before |
 | Walls | 3 or more perimeters |
@@ -114,7 +129,8 @@ After editing:
 | Two cables foul each other at the wall | `pitch_extra` (default 3.0). Raising it widens the box |
 | Board too tight or loose across the cradle | `fit` (default 0.20 per side) |
 | Shell binds in the opening, or the gap looks sloppy | `hole_c` (default 0.25 per side) |
-| Plug housing hits the wall before the plug is fully in | Raise `om_w` / `om_h` (13.0 × 7.2), or set `mouth_recess` negative |
+| Plug housing hits the wall before the plug is fully in | Raise `om_w` / `om_h` (13.0 × 7.2) |
+| Plug does not click fully home | Lower `mouth_recess` (1.00 now; 0 removes all wall in front) |
 
 ## Files
 
@@ -138,7 +154,12 @@ board can be lowered in without sliding. Breaks confirmed to fail the suite:
 
 | Break | Catches |
 |---|---|
-| Remove the wall's drop slot | `check 24`, `check 25` |
+| Make `usb_over_out` proud again (closed wall blocks the drop) | `check 24`, `check 25` |
 | Set `notch_c` negative (nub too big) | `check 1`, `check 7`, `check 24`, `check 25` |
 | Set `notch_dep` to 0 (notches gone) | `guard 17`, `guard 19` |
 | Widen `om_w` past the port pitch | `guard 14` |
+
+The wall-web probe has now been wrong three times — too big, then spanning the
+whole wall, then left behind when the pocket moved. It derives its position
+from `p_pocket()` rather than hand-computed numbers, which is why the last move
+did not silently break it.

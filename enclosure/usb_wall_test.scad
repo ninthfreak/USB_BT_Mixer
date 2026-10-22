@@ -9,19 +9,20 @@
 // is the main risk of that layout and a one-port coupon cannot show it.
 //
 // Parts:
-//   coupon() — base, wall with two USB-C openings, two board cradles
-//   staple() — two pegs into the board's retention notches, joined by a
-//              crossbar over the USB shell. Print two. This is the ONLY
-//              retainer: it takes plug-in and pull-out force, side-to-side
-//              and (at the port end) hold-down.
+//   coupon() — base, wall with two USB-C openings, two board cradles. ONE PART.
 //
-// Assembly, per board: lower it into the cradle about 1.5 mm back from the
-// wall, slide it forward so the outer USB-C shell enters the opening, then
-// drop a staple() so its pegs enter the notches.
+// Retention: two nubs rise from the cradle floor into the board's edge
+// notches. They take plug-in and pull-out force in the plane of the PCB, and
+// side-to-side. No loose clips.
 //
-// Nothing holds the board's INNER end down. That is deliberate: in the full
-// box the lid does it, and leaving it off here means the coupon tests whether
-// the notches alone can take plug insertion force, which is the open question.
+// Assembly, per board: drop it STRAIGHT DOWN into the cradle so the notches
+// land over the nubs. Nothing slides. For that to work the port opening is
+// slotted open to the top of the wall, so the USB-C shell drops in from above;
+// in the full box the lid caps that slot.
+//
+// Nothing holds the board DOWN. That is deliberate: the lid does it in the
+// full box, and leaving it off here keeps the coupon to one printed part and
+// lets you lift a board straight out to inspect the notch fit.
 //
 // NOT tested by this coupon: blocking the inner USB-C port. That port is live
 // on the board's 5V net (hardware/wiring.md), so the full box must make it
@@ -56,7 +57,8 @@ usb_cx   = board_w / 2;   // centred, from the drawing
 notch_d   = 3.45;  // MEASURE: notch's near edge, from the port edge
 notch_len = 2.00;  // MEASURE: length along the board
 notch_dep = 1.50;  // MEASURE: depth into each long edge
-notch_c   = 0.15;  // peg clearance per face
+notch_c   = 0.15;  // nub clearance per face
+nub_h     = pcb_t; // nub top, flush with the board's top face
 
 /* [Side-by-side spacing] */
 // Port centre spacing = board_w + 2*fit + side_t + pitch_extra.
@@ -109,12 +111,6 @@ usb_zc     = pcb_t + usb_h / 2;
 // Notch extents in board-local Y (0 = inner edge, board_l = port edge)
 ny1 = board_l - notch_d;
 ny0 = ny1 - notch_len;
-// Peg footprint inside a notch
-py0 = ny0 + notch_c;
-py1 = ny1 - notch_c;
-bar_z0 = pcb_t + usb_h + 0.6;   // crossbar clears the USB shell
-bar_t  = 2.0;
-bar_z1 = bar_z0 + bar_t;
 
 // Outer extents of the whole coupon
 x_lo = -fit - side_t;
@@ -129,7 +125,7 @@ function p_board()  = [board_w, board_l, pcb_t];
 function p_usb()    = [usb_w, usb_h, usb_over, usb_cx];
 function p_margin() = install_margin;
 function p_notch()  = [notch_d, notch_len, notch_dep];
-function p_peg_z()  = [py0, py1, bar_z1];
+function p_nub()    = [notch_c, nub_h];
 
 // The board outline, notches included. Shared by the preview and the checks.
 module board_outline(x0, h) {
@@ -163,6 +159,10 @@ module wall() {
             translate([cx, y_wall_in - eps, usb_zc])
                 rrect(usb_w + 2 * hole_c, usb_h + 2 * hole_c,
                       (usb_h + 2 * hole_c) / 2, wall_t + 2 * eps);
+            // drop slot: open from the opening up to the wall top, so the
+            // shell can come straight down into it. The lid caps this.
+            translate([cx - (usb_w + 2 * hole_c) / 2, y_wall_in - eps, usb_zc])
+                cube([usb_w + 2 * hole_c, wall_t + 2 * eps, wall_top - usb_zc + eps]);
             // overmold pocket; floor sits mouth_recess in front of the receptacle mouth
             pocket_d = y_wall_out - (y_wall_in + usb_over + mouth_recess);
             if (pocket_d > 0)
@@ -185,6 +185,12 @@ module cradle(x0) {
         for (xs = [x_in_l, x0 + board_w - ledge_w])
             translate([xs, 0, z_base_top - eps])
                 cube([ledge_w + fit, board_l, -z_base_top + eps]);
+        // retention nubs, rising from the base into the board's edge notches.
+        // These are the only thing holding the board fore-and-aft.
+        for (nx = [x0 + notch_c, x0 + board_w - notch_dep + notch_c])
+            translate([nx, ny0 + notch_c, z_base_top - eps])
+                cube([notch_dep - 2 * notch_c, notch_len - 2 * notch_c,
+                      nub_h - z_base_top + eps]);
     }
 }
 
@@ -203,33 +209,6 @@ module coupon() {
     }
 }
 
-// Notch staple: two pegs that drop into the board's retention notches, joined
-// by a crossbar that bridges over the USB shell. Shoulders rest on the cradle
-// rails, so it also holds the board down.
-//
-// In the full box these pegs are expected to hang from the LID instead, which
-// would make this a loose part no longer. The coupon prints it separately so
-// the notch fit can be felt before committing to that.
-module staple(x0) {
-    x_in_l = x0 - fit;
-    x_in_r = x0 + board_w + fit;
-    union() {
-        // pegs, inside the notches
-        translate([x0 + notch_c, py0, 0.15])
-            cube([notch_dep - 2 * notch_c, py1 - py0, pcb_t - 0.15]);
-        translate([x0 + board_w - notch_dep + notch_c, py0, 0.15])
-            cube([notch_dep - 2 * notch_c, py1 - py0, pcb_t - 0.15]);
-        // shoulders: from above the board top out over the cradle rails
-        translate([x_in_l - side_t, py0, pcb_t])
-            cube([(x0 + notch_dep) - (x_in_l - side_t), py1 - py0, bar_z0 - pcb_t]);
-        translate([x0 + board_w - notch_dep, py0, pcb_t])
-            cube([(x_in_r + side_t) - (x0 + board_w - notch_dep), py1 - py0, bar_z0 - pcb_t]);
-        // crossbar, clear above the USB shell
-        translate([x_in_l - side_t, py0, bar_z0])
-            cube([(x_in_r + side_t) - (x_in_l - side_t), py1 - py0, bar_t]);
-    }
-}
-
 // Ghost boards and shells, preview only (F5)
 module board_ghost(x0) {
     %color("SteelBlue", 0.5) board_outline(x0, pcb_t);
@@ -243,16 +222,12 @@ module board_ghost(x0) {
 }
 
 /* [Output] */
-part = "preview"; // [preview, coupon, staple]
+part = "preview"; // [preview, coupon]
 
 if (part == "coupon") {
     translate([0, 0, -z_base_bot]) coupon();       // base on the bed
-} else if (part == "staple") {
-    // lie it on its flat face: 1.7 mm thick, no supports
-    rotate([90, 0, 0]) translate([-x_lo, -py0, -bar_z1]) staple(0);
 } else {
     coupon();
-    color("DarkOrange") { staple(0); staple(pitch); }
     board_ghost(0);
     board_ghost(pitch);
 }

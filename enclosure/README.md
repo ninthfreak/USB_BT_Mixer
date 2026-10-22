@@ -40,7 +40,7 @@ It was going to be, inverted on four standoffs. Keeping it on the base is simple
 |---|---|
 | ESP32 mounting hole diameter | **MEASURE.** 2.6 mm assumed (M2.5). The standoff pilots follow from it |
 | ESP32 tallest component (`esp_top_h`) | **MEASURE.** 5.0 mm assumed, probably the BAT connector. This sets the box height |
-| Self-tapping thread life | M3 into printed PLA lasts perhaps 10–20 cycles. You will open this box a lot during firmware bring-up |
+| Self-tapping thread life | M3 into printed PETG lasts perhaps 10–20 cycles. You will open this box a lot during firmware bring-up. PETG is the better of the two here: it yields rather than cracking when a thread is overtightened |
 | Lid stiffness | 2.4 mm over a ~75 mm span, supported at four corners. The press posts push back; if the lid bows, thicken it or add a fifth boss |
 | Service gap | 6 mm between the RP boards and the ESP32 for wiring and the inline diodes, resistors and caps. No perfboard fits — the small parts go inline in the loom |
 
@@ -138,7 +138,7 @@ After editing:
 | File | `stl/usb_wall_test_coupon.stl` — one part, nothing loose |
 | Orientation | As exported, sitting on its base |
 | Supports | None. The port openings are short bridges, about 9 mm |
-| Material | PLA or PETG for the test. **Not** carbon-fibre-filled (that rule matters most near the antenna in the final box) |
+| Material | PETG (the owner's usual). **Not** carbon-fibre-filled — that rule matters most near the antenna in the final box |
 | Layer height | 0.12–0.16 mm. The nubs are 1.2 × 1.7 mm in plan, so fine layers matter more than before |
 | Walls | 3 or more perimeters |
 

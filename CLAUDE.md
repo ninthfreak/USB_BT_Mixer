@@ -12,7 +12,7 @@ Two USB-C inputs (each one a UAC2 sound card) → mixed → one Bluetooth audio 
 - Rate difficulty (x/10) and confidence (%) explicitly. Recommendations are recommendations, not decisions. Mark verified vs. assumed.
 - Readability: short paragraphs, headings, tables, small verifiable steps (owner has ADHD and is dyslexic).
 - Red/green color blind: never use red vs. green alone to carry meaning (UI, plots, LEDs, analyzer annotations). Use shape, text, position, or blue/orange.
-- Enclosure is printed on an Elegoo Centauri Carbon. No carbon-fiber-filled filament near the antenna (it attenuates 2.4 GHz).
+- Enclosure is printed on an Elegoo Centauri Carbon in **PETG** (the owner's usual material — don't default to PLA). No carbon-fiber-filled filament near the antenna (it attenuates 2.4 GHz).
 
 ## Repo layout
 

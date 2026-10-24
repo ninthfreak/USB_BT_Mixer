@@ -23,7 +23,15 @@ usb_w    = 8.90;   // shell width: board_w - 2*4.30, from the drawing
 usb_h    = 3.26;   // MEASURE: shell height
 usb_cx   = board_w / 2;
 // The two connectors differ on the real board (owner, boards in hand):
-usb_over_out = 0.00;   // MEASURED: the EXPOSED port is flush with the board edge
+// Owner, boards in hand: the EXPOSED port (notch end, the one the host cable
+// reaches) is flush with the PCB edge, in fact a fraction of a mm RECESSED
+// behind it. Only the inner PROGRAMMING port is proud. 0.00 is therefore the
+// conservative value, not the measured one; a small negative is the truth.
+// Tested: at -0.30 both suites still pass. port_cutouts() derives the overmold
+// pocket from this, so the wall left in front of the receptacle mouth stays
+// mouth_recess (1.00 mm) whatever the overhang. Safe to edit to a measured
+// negative when calipers are available.
+usb_over_out = 0.00;   // MEASURED flush; true value slightly negative
 usb_over_in  = 1.00;   // MEASURE: the inner programming port IS proud
 usb_depth    = 7.35;   // how far a receptacle reaches back along the board
 

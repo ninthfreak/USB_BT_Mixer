@@ -42,7 +42,7 @@ From Waveshare's schematic `ESP32-DEV-KIT-XX.pdf` (Altium, dated 2026-09-09). He
 | UART1 RX ← input 1 TX | 16 | J4 | In | |
 | UART2 TX → input 2 RX | 19 | J4 | Out | |
 | UART2 RX ← input 2 TX | 18 | J4 | In | |
-| Power in | VSYS | J3 pin 19 | — | From the shared rail. See **Power** below |
+| Power in | `5V` (net VSYS) | J3 pin 19 | — | From the shared rail. See **Power** below |
 | Ground | GND | J3 / J4 | — | |
 
 All I2S signals land on J3 and both UARTs on J4, so the two harnesses stay separate.
@@ -66,7 +66,7 @@ GPIO16 and GPIO17 are free: the schematic names U1 as **ESP32-WROOM-32E-N4** (no
 
 From Waveshare's schematic `RP2350-USB-C.pdf` (github.com/waveshareteam/RP2350-USB-C). The 18-pin header exposes GPIO0–10, GPIO26–29, 3V3, GND and the raw-VBUS pin.
 
-**Naming trap:** on this board the schematic calls that net `VSYS`, but **the silkscreen label is `5V`** (verified from Waveshare's pinout drawing). Below, "the `5V` pin" means that net. The ESP32 board's equivalent pin *is* silkscreened `VSYS`.
+**Naming:** the schematic calls this net `VSYS`, but **the silkscreen reads `5V`** — and the owner has confirmed the same is true on the ESP32 board. So **both boards are silkscreened `5V`** for what the schematics call VSYS. Below, "the `5V` pin" means that net on either board. It is the raw supply, not regulated 3.3 V.
 
 | Signal | GPIO | Direction | Notes |
 |---|---|---|---|
@@ -89,7 +89,7 @@ Not on the header, so no conflict: GPIO12/13 (second USB-C port, PIO-USB), GPIO1
 
 ```
 Host 1 ─USB-C─▶ board 1 `5V` ──▶|── ┐
-                                    ├── shared rail ──▶ ESP32 VSYS pin (J3-19)
+                                    ├── shared rail ──▶ ESP32 `5V` pin (J3-19)
 Host 2 ─USB-C─▶ board 2 `5V` ──▶|── ┘
                 (D1, D2: your Schottkys, cathode to the rail)
 ```
@@ -98,7 +98,7 @@ Host 2 ─USB-C─▶ board 2 `5V` ──▶|── ┘
 |---|---|
 | Input board 1 `5V` pin | D1 anode |
 | Input board 2 `5V` pin | D2 anode |
-| D1 + D2 cathodes | Shared rail → ESP32 `VSYS` (J3-19), 22 µF + 0.1 µF near the ESP32 |
+| D1 + D2 cathodes | Shared rail → ESP32 `5V` pin (J3-19), 22 µF + 0.1 µF near the ESP32 |
 | All GND | All GND |
 
 - **Diode orientation matters:** the banded end (cathode) goes to the rail. Check with a multimeter's diode range before powering anything.

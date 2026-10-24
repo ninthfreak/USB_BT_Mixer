@@ -56,8 +56,8 @@ esp_t  = 1.60;     // MEASURE: PCB thickness
 // from the long edges — which identifies the drawing's unlabelled 1.27.
 esp_hole_dx  = 50.04;
 esp_hole_dy  = 25.40;
-esp_hole_dia = 2.60;   // MEASURE: not dimensioned by Waveshare. 2.6 assumes M2.5
-esp_top_h    = 5.00;   // MEASURE: tallest part above the PCB (likely the BAT JST)
+esp_hole_dia = 2.60;   // Owner, by eye (calipers flat): about right. Confirm before buying screws
+esp_top_h    = 4.50;   // Owner, by eye: 4.5 mm. Sets the interior height
 esp_bot_h    = 0.50;   // MEASURE: anything on the underside
 esp_usb_w    = 8.95;   // drawing
 

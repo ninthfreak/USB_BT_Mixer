@@ -38,8 +38,8 @@ It was going to be, inverted on four standoffs. Keeping it on the base is simple
 
 | Item | Status |
 |---|---|
-| ESP32 mounting hole diameter | **MEASURE.** 2.6 mm assumed (M2.5). The standoff pilots follow from it |
-| ESP32 tallest component (`esp_top_h`) | **MEASURE.** 5.0 mm assumed, probably the BAT connector. This sets the box height |
+| ESP32 mounting hole diameter | **2.6 mm**, owner by eye — M2.5 confirmed as the right size. Worth a caliper check before buying screws |
+| ESP32 tallest component (`esp_top_h`) | **4.5 mm**, owner by eye. Sets the interior height. Worth a caliper check once the batteries are in |
 | Self-tapping thread life | M3 into printed PETG lasts perhaps 10–20 cycles. You will open this box a lot during firmware bring-up. PETG is the better of the two here: it yields rather than cracking when a thread is overtightened |
 | Lid stiffness | 2.4 mm over a ~75 mm span, supported at four corners. The press posts push back; if the lid bows, thicken it or add a fifth boss |
 | Service gap | 6 mm between the RP boards and the ESP32 for wiring and the inline diodes, resistors and caps. No perfboard fits — the small parts go inline in the loom |

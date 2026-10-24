@@ -234,7 +234,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
           <line x1="440" y1="381" x2="432" y2="381" stroke="var(--rule)" stroke-width="1.4"/><text x="446" y="385" fill="var(--dim)">3V3</text>
           <line x1="440" y1="399" x2="428" y2="399" stroke="var(--fg)" stroke-width="1.4"/><text x="446" y="403">GP29</text>
           <line x1="540" y1="180" x2="540" y2="192" stroke="var(--fg)" stroke-width="1.4"/><text x="540" y="207" text-anchor="middle">GND</text>
-          <line x1="612" y1="180" x2="612" y2="192" stroke="var(--fg)" stroke-width="1.4"/><text x="612" y="207" text-anchor="middle">5V / VSYS</text>
+          <line x1="612" y1="180" x2="612" y2="192" stroke="var(--fg)" stroke-width="1.4"/><text x="612" y="207" text-anchor="middle">5V</text>
         </g>
 
         <!-- rail: input 1 -->
@@ -487,7 +487,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   <h2>Check these against the real boards</h2>
   <ul class="plain">
     <li><b>Pin order along the ESP32's headers.</b> Every GPIO number here comes from Waveshare's schematic and is solid, but the drawings place the stubs for readability, not in true header order. Find each pin by its silkscreen label.</li>
-    <li><b>The ESP32's power pin marking.</b> The schematic net is <code>VSYS</code>; the silkscreen may read <code>5V</code>. The input boards' equivalent pin is definitely silkscreened <code>5V</code> while its net is also called VSYS. Same thing in all cases: raw supply, not regulated 3.3 V.</li>
+    <li><b>Power pin marking — settled.</b> Both boards silkscreen it <code>5V</code>, confirmed on the real hardware, even though both schematics call the net <code>VSYS</code>. Raw supply in both cases, not regulated 3.3 V. There is no naming trap after all.</li>
     <li><b>The second USB-C port on each input board</b> sits on that same raw-supply net, on the host side of the diode. It is sealed inside the box — leave it that way.</li>
     <li><b>Leave slack.</b> The ESP32 is screwed to the base and the lid only presses the input boards, so opening the box does not pull on the loom. It still helps to leave enough wire to lift the lid clear and set it down beside the base.</li>
   </ul>
@@ -502,7 +502,7 @@ const WIRES = [
     ["D1 cathode → rail node", "Banded end faces the rail"],
     ["Input 2 <code>5V</code> → D2 anode", ""],
     ["D2 cathode → rail node", "Banded end faces the rail"],
-    ["Rail node → ESP32 <code>5V / VSYS</code> (J3)", ""],
+    ["Rail node → ESP32 <code>5V</code> (J3)", "Silkscreened 5V on this board too, though the schematic net is VSYS"],
     ["C1 22 µF across rail node and ground node", "Observe polarity if it is electrolytic"],
     ["C2 0.1 µF across rail node and ground node", "Mount it right at the ESP32"],
     ["C3 0.1 µF across input 1's <code>5V</code> and <code>GND</code>", ""],

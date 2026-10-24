@@ -298,3 +298,24 @@ RAM. The RP2350 has 520 KB against the RP2040's 264 KB, and "USB audio + lwIP + 
 ### What did not change
 
 Same ESP32 chip, so A2DP/SBC, the 44.1 kHz constraint (#16), the one-clock-domain rule and the whole control-path design stand. The I2S pin numbers on the input board are unchanged (GP26/27/28/29); only the UART moves, from GP20/GP5 to GP4/GP5, which are a real UART1 pair.
+
+## 21. Measurements from the real hardware (2026-10-24)
+
+Owner has the boards. Three open values closed, all by eye rather than
+calipers (his battery is flat), so treat them as good to roughly ±0.3 mm
+rather than confirmed.
+
+| Value | Was | Now | Effect |
+|---|---|---|---|
+| `esp_hole_dia` | 2.60 assumed | **~2.60, M2.5 is the right screw** | None; confirms the BOM line |
+| `esp_top_h` | 5.00 assumed | **4.50** | Box interior ceiling drops 0.5 mm, so the enclosure is **14.7 mm** tall instead of 15.2 |
+| ESP32 power pin silkscreen | believed `VSYS` | **`5V`** | Corrects `hardware/wiring.md` |
+
+**The naming trap is gone.** Both boards silkscreen the raw-supply pin
+`5V`, even though both schematics call that net `VSYS`. Earlier notes said
+the ESP32 board was labelled `VSYS`; that was inferred from its schematic,
+not read off the board, and it was wrong. Wherever the docs say "VSYS pin",
+look for a pin marked `5V`.
+
+Enclosure is now **64.6 × 79.7 × 14.7 mm**. All 9 guards and 19 collision
+checks still pass, and the coupon suite is unaffected.

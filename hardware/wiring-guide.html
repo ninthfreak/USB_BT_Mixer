@@ -144,7 +144,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     <div class="fact"><b>Both input boards face the same way</b><span>You cannot mirror a PCB. Both sit with the exposed USB-C forward, so their pin rows repeat left to right: power/I2S, UART, power/I2S, UART.</span></div>
     <div class="fact"><b>Mount the ESP32 with J3 forward</b><span>J3 carries every I2S signal. Facing it at the input boards keeps the clock runs short. J4 (the UART side) faces the back wall.</span></div>
     <div class="fact"><b>The 33 Ω resistors go at the ESP32</b><span>Series termination belongs at the driving end, not at the receiver.</span></div>
-    <div class="fact"><b>No connectors</b><span>Decided 2026-10-24: everything hardwired. JST connectors would have roughly doubled the joint count and added 19 mm of box depth to buy the ability to unplug a board.</span></div>
+    <div class="fact"><b>No connectors, no perfboard</b><span>Decided 2026-10-24. All ten parts mount inline in the loom, each at the end it belongs to, and every wire is soldered at both ends. Both alternatives cost box depth and assembly work the build does not need.</span></div>
   </div>
 </section>
 
@@ -473,154 +473,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     <table>
       <thead><tr><th>Part</th><th>Value</th><th>Mounts</th><th>Why</th></tr></thead>
       <tbody>
-        <tr><td><span class="pin">D1 D2</span></td><td>Schottky, ≥1 A</td><td>Perfboard c1 and c3, upright (or inline in the loom)</td><td>Stops the two hosts' supplies from being tied together</td></tr>
-        <tr><td><span class="pin">R1–R4</span></td><td>33 Ω</td><td>Perfboard c14, c16, c19, c21, upright (or at the ESP32's pins)</td><td>Series termination damps clock-edge ringing; belongs at the driver</td></tr>
-        <tr><td><span class="pin">C1</span></td><td>22 µF</td><td>Perfboard c8, straddling the two buses. Must be under 8 mm tall</td><td>Rides out the Bluetooth transmit current bursts</td></tr>
-        <tr><td><span class="pin">C2</span></td><td>0.1 µF</td><td>Perfboard c10, straddling the two buses</td><td>Handles the fast edges C1 is too slow for</td></tr>
-        <tr><td><span class="pin">C3 C4</span></td><td>0.1 µF</td><td>Stays at each input board, soldered across its own supply pads</td><td>Local decoupling at the far end of the rail</td></tr>
+        <tr><td><span class="pin">D1 D2</span></td><td>Schottky, ≥1 A</td><td>In the loom, close to each input board's <code>5V</code> pin</td><td>Stops the two hosts' supplies from being tied together</td></tr>
+        <tr><td><span class="pin">R1–R4</span></td><td>33 Ω</td><td>At the ESP32's <code>GPIO25</code> and <code>GPIO33</code> pins</td><td>Series termination damps clock-edge ringing; belongs at the driver</td></tr>
+        <tr><td><span class="pin">C1</span></td><td>22 µF</td><td>Across the rail at the ESP32's power pin</td><td>Rides out the Bluetooth transmit current bursts</td></tr>
+        <tr><td><span class="pin">C2</span></td><td>0.1 µF</td><td>Beside C1, on the same two points</td><td>Handles the fast edges C1 is too slow for</td></tr>
+        <tr><td><span class="pin">C3 C4</span></td><td>0.1 µF</td><td>Across <code>5V</code>–<code>GND</code> at each input board</td><td>Local decoupling at the far end of the rail</td></tr>
       </tbody>
     </table>
-  </div>
-</section>
-
-<section>
-  <div class="eyebrow">Figure 5 · proposed</div>
-  <h2>Perfboard layout</h2>
-  <p>A single strip across the service gap, between the input boards and the ESP32. It carries the two things that need components — the power rail and the clock fan-out. Audio data and UART stay point-to-point, because routing them through here would add twelve solder joints and buy nothing.</p>
-  <p><b>21 × 5 holes at 0.1″, cut to about 54 × 13 mm.</b> Plain perfboard, not stripboard: holes are isolated, and the two buses are bare tinned wire laid along the top. Every axial part stands upright, which keeps the strip shallow and uniform.</p>
-  <figure>
-    <div class="canvas">
-      <svg viewBox="0 0 620 300" role="img" aria-label="Perfboard layout, 21 columns by 5 rows. The left eleven columns carry a ground bus on row 3 and a rail bus on row 4, with two upright diodes, a 22 microfarad and a 0.1 microfarad capacitor. The right eight columns carry two clock buses on row 1 with four upright 33 ohm resistors hanging from them.">
-        <defs>
-          <marker id="atick" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" fill="var(--dim)"/>
-          </marker>
-        </defs>
-        <text x="310" y="22" text-anchor="middle" font-family="var(--f-mono)" font-size="11" fill="var(--dim)">wires from the ESP32 come in on this side</text>
-        <!-- board -->
-        <rect x="46" y="72" width="508" height="124" rx="4" fill="var(--board)" stroke="var(--board-edge)" stroke-width="1.5"/>
-        <!-- holes -->
-        <g fill="none" stroke="var(--board-edge)" stroke-width="1">
-          <circle cx="60" cy="86" r="3.2"/><circle cx="84" cy="86" r="3.2"/><circle cx="108" cy="86" r="3.2"/><circle cx="132" cy="86" r="3.2"/><circle cx="156" cy="86" r="3.2"/><circle cx="180" cy="86" r="3.2"/><circle cx="204" cy="86" r="3.2"/><circle cx="228" cy="86" r="3.2"/><circle cx="252" cy="86" r="3.2"/><circle cx="276" cy="86" r="3.2"/><circle cx="300" cy="86" r="3.2"/><circle cx="324" cy="86" r="3.2"/><circle cx="348" cy="86" r="3.2"/><circle cx="372" cy="86" r="3.2"/><circle cx="396" cy="86" r="3.2"/><circle cx="420" cy="86" r="3.2"/><circle cx="444" cy="86" r="3.2"/><circle cx="468" cy="86" r="3.2"/><circle cx="492" cy="86" r="3.2"/><circle cx="516" cy="86" r="3.2"/><circle cx="540" cy="86" r="3.2"/>
-          <circle cx="60" cy="110" r="3.2"/><circle cx="84" cy="110" r="3.2"/><circle cx="108" cy="110" r="3.2"/><circle cx="132" cy="110" r="3.2"/><circle cx="156" cy="110" r="3.2"/><circle cx="180" cy="110" r="3.2"/><circle cx="204" cy="110" r="3.2"/><circle cx="228" cy="110" r="3.2"/><circle cx="252" cy="110" r="3.2"/><circle cx="276" cy="110" r="3.2"/><circle cx="300" cy="110" r="3.2"/><circle cx="324" cy="110" r="3.2"/><circle cx="348" cy="110" r="3.2"/><circle cx="372" cy="110" r="3.2"/><circle cx="396" cy="110" r="3.2"/><circle cx="420" cy="110" r="3.2"/><circle cx="444" cy="110" r="3.2"/><circle cx="468" cy="110" r="3.2"/><circle cx="492" cy="110" r="3.2"/><circle cx="516" cy="110" r="3.2"/><circle cx="540" cy="110" r="3.2"/>
-          <circle cx="60" cy="134" r="3.2"/><circle cx="84" cy="134" r="3.2"/><circle cx="108" cy="134" r="3.2"/><circle cx="132" cy="134" r="3.2"/><circle cx="156" cy="134" r="3.2"/><circle cx="180" cy="134" r="3.2"/><circle cx="204" cy="134" r="3.2"/><circle cx="228" cy="134" r="3.2"/><circle cx="252" cy="134" r="3.2"/><circle cx="276" cy="134" r="3.2"/><circle cx="300" cy="134" r="3.2"/><circle cx="324" cy="134" r="3.2"/><circle cx="348" cy="134" r="3.2"/><circle cx="372" cy="134" r="3.2"/><circle cx="396" cy="134" r="3.2"/><circle cx="420" cy="134" r="3.2"/><circle cx="444" cy="134" r="3.2"/><circle cx="468" cy="134" r="3.2"/><circle cx="492" cy="134" r="3.2"/><circle cx="516" cy="134" r="3.2"/><circle cx="540" cy="134" r="3.2"/>
-          <circle cx="60" cy="158" r="3.2"/><circle cx="84" cy="158" r="3.2"/><circle cx="108" cy="158" r="3.2"/><circle cx="132" cy="158" r="3.2"/><circle cx="156" cy="158" r="3.2"/><circle cx="180" cy="158" r="3.2"/><circle cx="204" cy="158" r="3.2"/><circle cx="228" cy="158" r="3.2"/><circle cx="252" cy="158" r="3.2"/><circle cx="276" cy="158" r="3.2"/><circle cx="300" cy="158" r="3.2"/><circle cx="324" cy="158" r="3.2"/><circle cx="348" cy="158" r="3.2"/><circle cx="372" cy="158" r="3.2"/><circle cx="396" cy="158" r="3.2"/><circle cx="420" cy="158" r="3.2"/><circle cx="444" cy="158" r="3.2"/><circle cx="468" cy="158" r="3.2"/><circle cx="492" cy="158" r="3.2"/><circle cx="516" cy="158" r="3.2"/><circle cx="540" cy="158" r="3.2"/>
-          <circle cx="60" cy="182" r="3.2"/><circle cx="84" cy="182" r="3.2"/><circle cx="108" cy="182" r="3.2"/><circle cx="132" cy="182" r="3.2"/><circle cx="156" cy="182" r="3.2"/><circle cx="180" cy="182" r="3.2"/><circle cx="204" cy="182" r="3.2"/><circle cx="228" cy="182" r="3.2"/><circle cx="252" cy="182" r="3.2"/><circle cx="276" cy="182" r="3.2"/><circle cx="300" cy="182" r="3.2"/><circle cx="324" cy="182" r="3.2"/><circle cx="348" cy="182" r="3.2"/><circle cx="372" cy="182" r="3.2"/><circle cx="396" cy="182" r="3.2"/><circle cx="420" cy="182" r="3.2"/><circle cx="444" cy="182" r="3.2"/><circle cx="468" cy="182" r="3.2"/><circle cx="492" cy="182" r="3.2"/><circle cx="516" cy="182" r="3.2"/><circle cx="540" cy="182" r="3.2"/>
-        </g>
-        <!-- row / col guides -->
-        <g font-family="var(--f-mono)" font-size="9" fill="var(--dim)">
-          <text x="36" y="89">r1</text><text x="36" y="113">r2</text><text x="36" y="137">r3</text><text x="36" y="161">r4</text><text x="36" y="185">r5</text>
-          <text x="60" y="67" text-anchor="middle">1</text><text x="156" y="67" text-anchor="middle">5</text>
-          <text x="276" y="67" text-anchor="middle">10</text><text x="396" y="67" text-anchor="middle">15</text>
-          <text x="540" y="67" text-anchor="middle">21</text>
-        </g>
-        <!-- buses -->
-        <line x1="60" y1="134" x2="300" y2="134" stroke="var(--w-gnd)" stroke-width="6" stroke-linecap="round"/>
-        <line x1="60" y1="158" x2="300" y2="158" stroke="var(--w-pwr)" stroke-width="6" stroke-linecap="round"/>
-        <line x1="348" y1="86" x2="420" y2="86" stroke="var(--w-clk)" stroke-width="6" stroke-linecap="round"/>
-        <line x1="468" y1="86" x2="540" y2="86" stroke="var(--w-clk)" stroke-width="6" stroke-linecap="round"/>
-        <text x="312" y="138" font-family="var(--f-mono)" font-size="10" fill="var(--w-gnd)">GND bus</text>
-        <text x="312" y="162" font-family="var(--f-mono)" font-size="10" fill="var(--w-pwr)">RAIL bus</text>
-        <text x="384" y="76" text-anchor="middle" font-family="var(--f-mono)" font-size="10" fill="var(--w-clk)">BCLK</text>
-        <text x="504" y="76" text-anchor="middle" font-family="var(--f-mono)" font-size="10" fill="var(--w-clk)">LRCK</text>
-        <!-- diodes, upright, spanning r5 to r4 -->
-        <g>
-          <rect x="52" y="152" width="16" height="36" rx="7" fill="var(--surface)" stroke="var(--w-pwr)" stroke-width="2"/>
-          <line x1="53" y1="159" x2="67" y2="159" stroke="var(--w-pwr)" stroke-width="3"/>
-          <rect x="100" y="152" width="16" height="36" rx="7" fill="var(--surface)" stroke="var(--w-pwr)" stroke-width="2"/>
-          <line x1="101" y1="159" x2="115" y2="159" stroke="var(--w-pwr)" stroke-width="3"/>
-        </g>
-        <text x="60" y="206" text-anchor="middle" font-family="var(--f-mono)" font-size="10" fill="var(--w-pwr)">D1</text>
-        <text x="108" y="206" text-anchor="middle" font-family="var(--f-mono)" font-size="10" fill="var(--w-pwr)">D2</text>
-        <!-- caps -->
-        <circle cx="228" cy="146" r="12" fill="var(--surface)" stroke="var(--w-pwr)" stroke-width="2"/>
-        <text x="228" y="150" text-anchor="middle" font-family="var(--f-mono)" font-size="9" fill="var(--w-pwr)">C1</text>
-        <circle cx="276" cy="146" r="10" fill="var(--surface)" stroke="var(--w-pwr)" stroke-width="2"/>
-        <text x="276" y="150" text-anchor="middle" font-family="var(--f-mono)" font-size="9" fill="var(--w-pwr)">C2</text>
-        <text x="228" y="176" text-anchor="middle" font-family="var(--f-mono)" font-size="9" fill="var(--dim)">+ on r4</text>
-        <!-- resistors, upright, r1 to r2 -->
-        <g>
-          <rect x="364" y="80" width="16" height="36" rx="4" fill="var(--surface)" stroke="var(--w-clk)" stroke-width="2"/>
-          <rect x="412" y="80" width="16" height="36" rx="4" fill="var(--surface)" stroke="var(--w-clk)" stroke-width="2"/>
-          <rect x="484" y="80" width="16" height="36" rx="4" fill="var(--surface)" stroke="var(--w-clk)" stroke-width="2"/>
-          <rect x="532" y="80" width="16" height="36" rx="4" fill="var(--surface)" stroke="var(--w-clk)" stroke-width="2"/>
-        </g>
-        <g font-family="var(--f-mono)" font-size="10" fill="var(--w-clk)" text-anchor="middle">
-          <text x="372" y="130">R1</text><text x="420" y="130">R2</text><text x="492" y="130">R3</text><text x="540" y="130">R4</text>
-        </g>
-        <!-- landing badges: ESP32 side -->
-        <g stroke="var(--dim)" stroke-width="1" fill="none">
-          <path d="M288 56 V158" marker-end="url(#atick)"/>
-          <path d="M312 56 V134" marker-end="url(#atick)"/>
-          <path d="M348 56 V80" marker-end="url(#atick)"/>
-          <path d="M468 56 V80" marker-end="url(#atick)"/>
-        </g>
-        <g font-family="var(--f-mono)" font-size="10" text-anchor="middle">
-          <circle cx="288" cy="46" r="9" fill="var(--w-pwr)"/><text x="288" y="50" fill="#fff">5</text>
-          <circle cx="312" cy="46" r="9" fill="var(--w-gnd)"/><text x="312" y="50" fill="var(--surface)">6</text>
-          <circle cx="348" cy="46" r="9" fill="var(--w-clk)"/><text x="348" y="50" fill="#fff">7</text>
-          <circle cx="468" cy="46" r="9" fill="var(--w-clk)"/><text x="468" y="50" fill="#fff">10</text>
-        </g>
-        <!-- landing badges: input side -->
-        <g stroke="var(--dim)" stroke-width="1" fill="none">
-          <path d="M60 236 V190" marker-end="url(#atick)"/>
-          <path d="M108 236 V190" marker-end="url(#atick)"/>
-          <path d="M156 236 V142" marker-end="url(#atick)"/>
-          <path d="M180 262 V142" marker-end="url(#atick)"/>
-          <path d="M372 236 V118" marker-end="url(#atick)"/>
-          <path d="M420 262 V118" marker-end="url(#atick)"/>
-          <path d="M492 236 V118" marker-end="url(#atick)"/>
-          <path d="M540 262 V118" marker-end="url(#atick)"/>
-        </g>
-        <g font-family="var(--f-mono)" font-size="10" text-anchor="middle">
-          <circle cx="60" cy="246" r="9" fill="var(--w-pwr)"/><text x="60" y="250" fill="#fff">1</text>
-          <circle cx="108" cy="246" r="9" fill="var(--w-pwr)"/><text x="108" y="250" fill="#fff">2</text>
-          <circle cx="156" cy="246" r="9" fill="var(--w-gnd)"/><text x="156" y="250" fill="var(--surface)">3</text>
-          <circle cx="180" cy="272" r="9" fill="var(--w-gnd)"/><text x="180" y="276" fill="var(--surface)">4</text>
-          <circle cx="372" cy="246" r="9" fill="var(--w-clk)"/><text x="372" y="250" fill="#fff">8</text>
-          <circle cx="420" cy="272" r="9" fill="var(--w-clk)"/><text x="420" y="276" fill="#fff">9</text>
-          <circle cx="492" cy="246" r="9" fill="var(--w-clk)"/><text x="492" y="250" fill="#fff">11</text>
-          <circle cx="540" cy="272" r="9" fill="var(--w-clk)"/><text x="540" y="276" fill="#fff">12</text>
-        </g>
-        <text x="310" y="296" text-anchor="middle" font-family="var(--f-mono)" font-size="11" fill="var(--dim)">wires from the two input boards come in on this side</text>
-      </svg>
-    </div>
-    <figcaption><b>Figure 5.</b> Top view, drawn to scale at 0.1″ pitch. Thick lines are bare-wire buses laid on the top surface. The left eleven columns are the power section, the right eight the clock fan-out; column 12 and column 17 are deliberate gaps so the buses cannot touch. Rows 1–2 on the left and rows 3–5 on the right are spare.</figcaption>
-  </figure>
-
-  <div class="tablewrap">
-    <table>
-      <thead><tr><th>#</th><th>Wire</th><th>Hole</th><th>Shares the hole with</th></tr></thead>
-      <tbody>
-        <tr><td class="n">1</td><td>Input 1 <code>5V</code></td><td><span class="pin">c1 r5</span></td><td>D1 anode (plain end)</td></tr>
-        <tr><td class="n">2</td><td>Input 2 <code>5V</code></td><td><span class="pin">c3 r5</span></td><td>D2 anode (plain end)</td></tr>
-        <tr><td class="n">3</td><td>Input 1 <code>GND</code></td><td><span class="pin">c5 r3</span></td><td>GND bus</td></tr>
-        <tr><td class="n">4</td><td>Input 2 <code>GND</code></td><td><span class="pin">c6 r3</span></td><td>GND bus</td></tr>
-        <tr><td class="n">5</td><td>ESP32 <code>5V / VSYS</code></td><td><span class="pin">c11 r4</span></td><td>RAIL bus</td></tr>
-        <tr><td class="n">6</td><td>ESP32 <code>GND</code></td><td><span class="pin">c11 r3</span></td><td>GND bus</td></tr>
-        <tr><td class="n">7</td><td>ESP32 <code>GPIO25</code> (BCLK)</td><td><span class="pin">c13 r1</span></td><td>BCLK bus</td></tr>
-        <tr><td class="n">8</td><td>Input 1 <code>GP26</code></td><td><span class="pin">c14 r2</span></td><td>R1 lower lead</td></tr>
-        <tr><td class="n">9</td><td>Input 2 <code>GP26</code></td><td><span class="pin">c16 r2</span></td><td>R2 lower lead</td></tr>
-        <tr><td class="n">10</td><td>ESP32 <code>GPIO33</code> (LRCK)</td><td><span class="pin">c18 r1</span></td><td>LRCK bus</td></tr>
-        <tr><td class="n">11</td><td>Input 1 <code>GP27</code></td><td><span class="pin">c19 r2</span></td><td>R3 lower lead</td></tr>
-        <tr><td class="n">12</td><td>Input 2 <code>GP27</code></td><td><span class="pin">c21 r2</span></td><td>R4 lower lead</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <h3>Build it in this order</h3>
-  <ul class="plain">
-    <li><b>Buses first, while the board is empty.</b> GND bare wire along row 3, columns 1–11. RAIL along row 4, columns 1–11. BCLK along row 1, columns 13–16. LRCK along row 1, columns 18–21. Solder each at every column it crosses.</li>
-    <li><b>Then the two diodes.</b> Both upright, banded end down into the RAIL bus at <span class="pin">c1 r4</span> and <span class="pin">c3 r4</span>. The plain ends sit in row 5 where the input boards' <code>5V</code> wires arrive.</li>
-    <li><b>Then the four resistors</b>, upright, hanging from the two clock buses on row 1 down into row 2.</li>
-    <li><b>Then the capacitors.</b> C1 at column 8 and C2 at column 10, each straddling rows 3 and 4. C1's <b>+</b> leg goes in row 4.</li>
-    <li><b>Wires last</b>, by the numbers above. Leave them long; trim on final assembly.</li>
-  </ul>
-
-  <div class="flag">
-    <h3>What this costs the box</h3>
-    <p class="sub" style="margin:0 0 8px">The strip needs a 16 mm service gap instead of the current 6 mm, and about 1.5 mm more headroom for the upright parts. The enclosure grows from <b>64.6 × 79.7 × 15.2 mm</b> to roughly <b>64.6 × 89.7 × 17.2 mm</b> — 10 mm deeper, 2 mm taller. The footprint's width does not change.</p>
-    <p class="sub" style="margin:0">Also: keep the 22 µF under 8 mm tall, or it will not clear the lid. A 5 × 7 mm radial, a tantalum or a 1206 ceramic all work; the common 5 × 11 mm electrolytic does not.</p>
   </div>
 </section>
 

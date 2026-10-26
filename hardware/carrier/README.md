@@ -1,14 +1,14 @@
 # Carrier board
 
 > **Status: KiCad DRC clean, routed, not built, not ordered.**
-> Recommendation: hold the order until two things are settled:
 >
-> 1. **Antenna clearance** — the ESP32's antenna has copper 6.55 mm away on
->    one side; Espressif asks for 15 mm. Needs a decision
->    ([`AUDIT.md` #21](AUDIT.md#21-antenna-clearance-on-the-front-side-new)).
-> 2. **The two-I2S clock loop-back is still untested.** A jumper-wire bench
->    test of one input board + the ESP32 would prove it for the price of an
->    afternoon, before paying for boards.
+> - **Antenna clearance: accepted as is** (owner, 2026-10-26). Copper is
+>   6.55 mm in front of the antenna against Espressif's 15 mm; the antenna
+>   itself hangs fully past the board edge
+>   ([`AUDIT.md` #21](AUDIT.md#21-antenna-clearance-on-the-front-side-new)).
+> - Recommendation before ordering: **the two-I2S clock loop-back is still
+>   untested.** A jumper-wire bench test of one input board + the ESP32 would
+>   prove it for the price of an afternoon.
 
 One flat PCB that the three modules solder onto, replacing the hand-wired
 loom. All passives are through-hole and live on it.
@@ -38,7 +38,8 @@ devkit's antenna end hangs 7.5 mm into free air. An L costs nothing extra:
 fabs price by the bounding box.
 
 The catch is the antenna's front side, where the front-right block comes
-close. That is [AUDIT.md #21](AUDIT.md#21-antenna-clearance-on-the-front-side-new).
+close: 6.55 mm, where Espressif asks for 15. The owner accepted that rather
+than make the board ~8.5 mm deeper ([AUDIT.md #21](AUDIT.md#21-antenna-clearance-on-the-front-side-new)).
 
 ## Build
 
@@ -173,7 +174,7 @@ lid's press posts do.
 
 | Item | State |
 |---|---|
-| Antenna clearance, front side | **Owner decision.** [AUDIT.md #21](AUDIT.md#21-antenna-clearance-on-the-front-side-new) |
+| Antenna clearance, front side | **Accepted as is** (owner). If Bluetooth range disappoints, option C in [AUDIT.md #21](AUDIT.md#21-antenna-clearance-on-the-front-side-new) is the fix |
 | Where the antenna sits on the devkit | **Settled** from Waveshare's drawing: 18.00 mm across, centred, 6.35–6.80 mm deep (`esp_ant_w`, `esp_ant_l` in `boards.scad`) |
 | I2S loop-back and UART relay | **Untested** in hardware. Bench test before ordering (recommended) |
 | Enclosure for the carrier | Not designed. The carrier needs standoffs: through-hole leads protrude underneath |

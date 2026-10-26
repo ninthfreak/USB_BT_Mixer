@@ -4,7 +4,7 @@
 
 All 20 findings below were worked through in the suggested order. KiCad's own
 DRC is now clean on the routed board and is the gate in `build.sh`.
-**One new open item (#21) needs an owner decision before ordering.**
+**One new item (#21) was found; the owner accepted the layout as is.**
 
 | # | Finding | Now | Verified by |
 |---|---|---|---|
@@ -28,7 +28,7 @@ DRC is now clean on the routed board and is the gate in `build.sh`.
 | 18 | Test points 57 mm apart | **Fixed.** 3.8 mm apart | Placement |
 | 19 | Leads protrude underneath | Unchanged: inherent to THT. Mount on standoffs | — |
 | 20 | Hosts' grounds tied | Unchanged: inherent, benign | — |
-| **21** | **Antenna clearance on its front side** | **Open — owner decision** | Board file + antenna position from Waveshare's drawing |
+| **21** | **Antenna clearance on its front side** | **Accepted as is** (owner, option A) | Board file + antenna position from Waveshare's drawing |
 
 ### 21. Antenna clearance on the front side (new)
 
@@ -60,8 +60,9 @@ current layout meets the first half and not the second.
 | C. Deeper L | ESP32 ~8.5 mm further back (board ~79.6 → ~88 mm deep) | 2/10 |
 | D. Antenna off the rear edge | ESP32 turned; board ~25 mm deeper; flashing-port access rethought | 5/10 |
 
-Recommendation: **C**. ~75 % confident it is the best trade: cheap with the
-generators, box size is free, and it meets the guideline on every side.
+Recommendation was **C** (~75 % confident). **Owner's decision: A, keep the
+layout as is** (2026-10-26). No cost difference either way at a flat-priced
+fab. If Bluetooth range proves short on the built box, C is the known fix.
 
 Source: Espressif, *PCB Layout Design* (antenna placement),
 https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32s2/pcb-layout-design.html

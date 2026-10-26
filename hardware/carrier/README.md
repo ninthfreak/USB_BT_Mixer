@@ -170,6 +170,32 @@ The service strip is 4.1 mm, so only parts under ~4 mm tall fit there, which
 is why the bulk cap C1 sits in the left column rather than beside the ESP32's
 5V pad.
 
+## Soldering: not every pad
+
+Only the pads that carry a net, plus a corner or two per module so nothing can
+peel from one end. **43 joints instead of 74.** `CONNECTIONS.md` has the
+per-pad map; `SOLDER_MECHANICAL` in `netlist.py` lists the mechanical ones and
+`check_netlist.py` asserts every one of them is electrically floating — several
+are the ESP32's flash and strapping pins, and tying those to live copper would
+be worse than leaving them unsoldered.
+
+The full land pattern is still fabricated, so any pad can be soldered later
+without a new board.
+
+### Plug forces are not held by solder
+
+Worth stating plainly, because it is easy to assume otherwise. Each input
+board's pads stop **9.8 mm short of its USB-C shell** — `boards.scad` calls
+that the port-end pad-free zone. There is no solder anywhere near the
+connector, with a full land pattern or a partial one.
+
+Pulling a cable therefore applies a peel moment that solder was never taking.
+The enclosure already handles it: the lid's `press_out` posts bear on the
+module's top face 0.6–3.1 mm from the port edge, and the retention nubs sit in
+the edge notches. **A carrier build must keep both**, which means the lid posts
+stay as they are (the module sits 0.1 mm higher on a 1.6 mm carrier, so they
+need no change) and the carrier must not block the nubs.
+
 ## Still open
 
 | Item | State |

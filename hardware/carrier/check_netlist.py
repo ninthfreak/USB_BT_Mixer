@@ -9,7 +9,8 @@ source. Checks, in order:
   2. the schematic has no nets beyond those (bar KiCad's unconnected-* stubs)
   3. every pad in NO_CONNECT really is unconnected
   4. no pad is left floating that isn't named in NO_CONNECT
-  5. every part carries a footprint, that footprint file exists, and its pad
+  5. every mechanical-only solder pad really is unconnected
+  6. every part carries a footprint, that footprint file exists, and its pad
      numbers are exactly the symbol's pad numbers
 """
 import subprocess, sys, pathlib, re, xml.etree.ElementTree as ET
@@ -114,6 +115,19 @@ def main():
             names.setdefault(ref, []).append(f"{nm}(#{num})")
         fails.append("floating pads declared nowhere: " +
                      "; ".join(f"{r}: {', '.join(v)}" for r, v in sorted(names.items())))
+
+    # A pad listed as mechanical must carry no net. Soldering the ESP32's
+    # flash or strapping pins to live copper would be worse than not
+    # soldering them at all.
+    owner = {}
+    for net, nodes in want.items():
+        for rp in nodes:
+            owner[rp] = net
+    for node, why in N.SOLDER_MECHANICAL.items():
+        rp = N.resolve(node, table)
+        if rp in owner:
+            fails.append(f"{node} is listed as mechanical-only but is on net "
+                         f"{owner[rp]}")
 
     check_footprints(fails)
 

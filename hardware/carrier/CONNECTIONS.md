@@ -83,6 +83,43 @@ cannot disagree.
 | TP2 | GND | Ground test point |
 | SJ1 | closed | Input 1 GP29 to GND, cut to free |
 | SJ2 | closed | Input 2 GP29 to GND, cut to free |
+## What to solder
+
+Only the pads that carry a net, plus a few corners so a module
+cannot peel from one end. Everything else is left bare: the land
+pattern is there if you ever want it.
+
+The port end of each input board has **no pads at all** -- the
+nearest joint is 9.8 mm from the USB-C shell -- so plug forces were
+never going to be held by solder. The enclosure lid's press posts
+take that load, as they already do today.
+
+### U1 (RP2350-USB-C) — solder 12 of 18
+
+| | Pads |
+|---|---|
+| **Net** | `1 5V`, `2 GND`, `4 GP29`, `5 GP28`, `6 GP27`, `7 GP26`, `13 GP3`, `14 GP4`, `15 GP5` |
+| **Mechanical** | `9 GP9`, `10 GP0`, `18 GP8` |
+| Leave bare | 3 3V3, 8 GP10, 11 GP1, 12 GP2, 16 GP6, 17 GP7 |
+
+### U2 (RP2350-USB-C) — solder 12 of 18
+
+| | Pads |
+|---|---|
+| **Net** | `1 5V`, `2 GND`, `4 GP29`, `5 GP28`, `6 GP27`, `7 GP26`, `13 GP3`, `14 GP4`, `15 GP5` |
+| **Mechanical** | `9 GP9`, `10 GP0`, `18 GP8` |
+| Leave bare | 3 3V3, 8 GP10, 11 GP1, 12 GP2, 16 GP6, 17 GP7 |
+
+### U3 (ESP32-DEV-KIT) — solder 19 of 38
+
+| | Pads |
+|---|---|
+| **Net** | `3 IO36`, `4 IO39`, `6 IO35`, `7 IO32`, `8 IO33`, `9 IO25`, `10 IO26`, `14 GND`, `19 5V`, `20 GND`, `22 IO22`, `25 IO21`, `26 GND`, `27 IO19`, `28 IO18`, `30 IO17`, `31 IO16` |
+| **Mechanical** | `1 3V3`, `38 CLK` |
+| Leave bare | 2 EN, 5 IO34, 11 IO27, 12 IO14, 13 IO12, 15 IO13, 16 SD2, 17 SD3, 18 CMD, 21 IO23, 23 TX0, 24 RX0, 29 IO5, 32 IO4, 33 IO0, 34 IO2, 35 IO15, 36 SD1, 37 SD0 |
+
+**43 joints instead of 74.**
+
 
 ## Deliberately not connected
 

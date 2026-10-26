@@ -156,6 +156,21 @@ FOOTPRINTS = {
     "SJ2": "Jumper:SolderJumper-2_P1.3mm_Bridged_Pad1.0x1.5mm",
 }
 
+# Pads to solder for MECHANICAL reasons only -- they carry no net. The owner
+# solders the connected pads plus these; the rest of the land pattern stays
+# bare. Each module's pad field has a corner here so it cannot peel from one
+# end. Every one must be electrically floating on the carrier, which
+# check_netlist.py asserts: several are the ESP32's flash and strapping pins
+# and tying them anywhere would be actively harmful.
+SOLDER_MECHANICAL = {
+    "U1.GP9":  "far corner, left column", "U1.GP0": "near corner, right column",
+    "U1.GP8":  "far corner, right column",
+    "U2.GP9":  "far corner, left column", "U2.GP0": "near corner, right column",
+    "U2.GP8":  "far corner, right column",
+    "U3.3V3":  "corner, antenna end of J3",
+    "U3.CLK":  "corner, USB-C end of J4",
+}
+
 PASSIVE_PINS = {   # ref -> {pin name: pad number}
     "r":    {"1": 1, "2": 2},
     "c":    {"1": 1, "2": 2},

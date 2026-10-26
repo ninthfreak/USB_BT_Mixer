@@ -48,6 +48,39 @@ def main():
     for ref, p in N.PARTS.items():
         L.append(f"| {ref} | {p['value']} | {p['desc']} |")
 
+    # Soldering map: the owner solders only what is needed.
+    conn = {}
+    for net, nodes in nets.items():
+        for ref, pad in nodes:
+            conn.setdefault(ref, {})[pad] = net
+    mech = {}
+    for node, why in N.SOLDER_MECHANICAL.items():
+        ref, pad = N.resolve(node, N.pin_table())
+        mech.setdefault(ref, {})[pad] = why
+
+    L += ["## What to solder", "",
+          "Only the pads that carry a net, plus a few corners so a module",
+          "cannot peel from one end. Everything else is left bare: the land",
+          "pattern is there if you ever want it.", "",
+          "The port end of each input board has **no pads at all** -- the",
+          "nearest joint is 9.8 mm from the USB-C shell -- so plug forces were",
+          "never going to be held by solder. The enclosure lid's press posts",
+          "take that load, as they already do today.", ""]
+    tot_s = tot_a = 0
+    for ref in ("U1", "U2", "U3"):
+        allp = pads[ref]
+        cs = sorted(conn.get(ref, {}))
+        ms = sorted(mech.get(ref, {}))
+        skip = [p for p in sorted(allp) if p not in cs and p not in ms]
+        tot_s += len(cs) + len(ms); tot_a += len(allp)
+        L += [f"### {ref} ({N.PARTS[ref]['value']}) — solder "
+              f"{len(cs) + len(ms)} of {len(allp)}", "",
+              "| | Pads |", "|---|---|",
+              "| **Net** | " + ", ".join(f"`{p} {allp[p]}`" for p in cs) + " |",
+              "| **Mechanical** | " + ", ".join(f"`{p} {allp[p]}`" for p in ms) + " |",
+              "| Leave bare | " + ", ".join(f"{p} {allp[p]}" for p in skip) + " |", ""]
+    L += [f"**{tot_s} joints instead of {tot_a}.**", ""]
+
     L += ["", "## Deliberately not connected", "",
           "| Pin | Why |", "|---|---|"]
     for node, why in N.NO_CONNECT.items():

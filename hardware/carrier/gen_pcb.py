@@ -107,13 +107,24 @@ def pad_box(fpid):
         xs += [x - w / 2, x + w / 2]; ys += [y - h / 2, y + h / 2]
     return _bbox(xs, ys)
 
+def xform(x, y, rot):
+    """KiCad places a local point at angle `rot`. The angle is CCW on screen
+    and screen Y points down, so in file coordinates:
+        x' =  x*cos + y*sin,   y' = -x*sin + y*cos
+    Getting this wrong is invisible when the generator and the check share it,
+    which is exactly what happened: five 90-degree parts were up to 7.6 mm out
+    and both agreed."""
+    if rot == 0:   return x, y
+    if rot == 90:  return y, -x
+    if rot == 180: return -x, -y
+    if rot == 270: return -y, x
+    raise AssertionError(f"unsupported rotation {rot}")
+
 def rotate(aabb, rot):
     x0, y0, x1, y1 = aabb
-    if rot in (90, 270):
-        x0, y0, x1, y1 = y0, x0, y1, x1
-    if rot in (180, 270):
-        x0, x1, y0, y1 = -x1, -x0, -y1, -y0
-    return x0, y0, x1, y1
+    xs, ys = zip(*(xform(x, y, rot)
+                   for x in (x0, x1) for y in (y0, y1)))
+    return min(xs), min(ys), max(xs), max(ys)
 
 def origin(ref, fpid):
     """Footprint origin that puts the courtyard centre on PLACE[ref]."""

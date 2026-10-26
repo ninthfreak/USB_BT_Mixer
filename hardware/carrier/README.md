@@ -27,6 +27,8 @@ below) does not affect the land pattern.
 | `check_netlist.py` | Reads the netlist back *out* of the schematic and diffs it against `netlist.py`; also resolves every footprint and checks its pad numbers |
 | `check_footprints.py` | Recomputes every pad coordinate from `boards.scad`; checks each courtyard encloses its fab outline and is symmetric |
 | `check_pcb.py` | Courtyards inside the outline, none overlapping, no part on a mounting hole, exposed ports on the front edge |
+| `check_routing.py` | Net lengths, I2S against the <100 mm rule, copper headroom, nothing live in the antenna keep-out |
+| `check_pads_vs_kicad.py` | **Independent.** Rasterises F.Cu and compares every pad centroid to where we think it is |
 | `build.sh` | Runs all of it and refreshes `carrier.pdf` |
 
 ```sh
@@ -134,6 +136,28 @@ Placement is by **courtyard centre**, not footprint origin: several stock
 footprints put their origin on pad 1, so a literal `(x, y)` meant something
 different for every part. `gen_pcb.origin()` solves for the origin and
 `check_pcb.py` reuses the same function, so the two cannot disagree.
+
+### Why there is an independent check
+
+`check_pcb.py` reuses `gen_pcb`'s geometry on purpose, so the generator and
+the check cannot drift apart. The cost is that a bug in the **shared** code is
+invisible to both, and that is exactly what happened.
+
+The transform placing a rotated footprint was wrong for 90 degrees — it used
+`y' = +x` where KiCad uses `y' = -x`. Five parts were up to **7.6 mm** out of
+position, D1 and D2 partly off the board, and every check reported OK because
+the check did the same wrong arithmetic.
+
+`check_pads_vs_kicad.py` closes that hole by taking KiCad's word for it: it
+renders F.Cu, finds the centroid of every copper blob, and compares. The board
+outline is rendered too, so the pixel-to-mm mapping is self-calibrating and no
+assumption about page size enters. Reintroduce the old transform and the two
+checks disagree, which is the point:
+
+```
+check_pcb  -> OK: all courtyards inside the outline, none overlapping
+vs KiCad   -> FAIL: C1.2 we say (3.40,27.62); nearest KiCad shape (3.37,25.09)
+```
 
 ### What the checks caught
 

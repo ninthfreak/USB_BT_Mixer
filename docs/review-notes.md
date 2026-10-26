@@ -343,6 +343,11 @@ the same number disagreed:
    which it is. Asking for a re-measurement of a recorded vendor dimension
    is work billed back to the owner for a filing failure.
 
+Update 2026-10-26: Waveshare's dimensioned ESP32 drawing is now archived as
+`docs/sources/esp32-dev-kit-drawing.png`, with the owner's box marking the
+antenna. It carries an **18.00 mm** antenna-width dimension that the original
+extraction never recorded; now in `boards.scad` as `esp_ant_w`/`esp_ant_l`.
+
 Outstanding: `ESP32-DEV-KIT-XX.pdf` is still not in the repo. The numbers are
 extracted into `wiring.md` and `boards.scad`, so nothing is blocked, but the
 source should be archived under `docs/` when convenient.

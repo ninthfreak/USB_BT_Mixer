@@ -124,7 +124,7 @@ Host 2 ─USB-C─▶ board 2 `5V` ──▶|── ┘
 | Mounting holes | **Four**, at 50.04 mm (X) × 25.40 mm (Y) centres. Diameter not dimensioned — MEASURE |
 | Headers | 19 pins per row, 2.54 mm pitch, 45.72 mm span; rows 24.94 mm apart |
 | USB-C | 8.95 mm wide, on one short edge |
-| Antenna | PCB antenna at the **opposite** short edge from the USB-C. Its exact extent is not dimensioned |
+| Antenna | PCB antenna at the **opposite** short edge from the USB-C. **18.00 mm** across the board, centred (drawing). Reaches **~6.4–6.8 mm** in from the end edge (measured off the drawing; Waveshare does not dimension it). Source image with the owner's markup: `docs/sources/esp32-dev-kit-drawing.png` |
 
 All verified from the drawing. One unlabelled 1.27 mm dimension near the left edge is not identified; it doesn't affect anything we need.
 

@@ -3,7 +3,7 @@
 > **Status: KiCad DRC clean, routed, not built, not ordered.**
 > Recommendation: hold the order until two things are settled:
 >
-> 1. **Antenna clearance** — the ESP32's antenna has copper ~5–6 mm away on
+> 1. **Antenna clearance** — the ESP32's antenna has copper 6.55 mm away on
 >    one side; Espressif asks for 15 mm. Needs a decision
 >    ([`AUDIT.md` #21](AUDIT.md#21-antenna-clearance-on-the-front-side-new)).
 > 2. **The two-I2S clock loop-back is still untested.** A jumper-wire bench
@@ -174,7 +174,7 @@ lid's press posts do.
 | Item | State |
 |---|---|
 | Antenna clearance, front side | **Owner decision.** [AUDIT.md #21](AUDIT.md#21-antenna-clearance-on-the-front-side-new) |
-| Where the antenna sits on the devkit | **Assumed** within the last ~7 mm. One photo or measurement settles it |
+| Where the antenna sits on the devkit | **Settled** from Waveshare's drawing: 18.00 mm across, centred, 6.35–6.80 mm deep (`esp_ant_w`, `esp_ant_l` in `boards.scad`) |
 | I2S loop-back and UART relay | **Untested** in hardware. Bench test before ordering (recommended) |
 | Enclosure for the carrier | Not designed. The carrier needs standoffs: through-hole leads protrude underneath |
-| `ESP32-DEV-KIT-XX.pdf` | Archive it in `docs/` so the source survives. Not a blocker |
+| ESP32 sources | The dimensioned drawing is archived (`docs/sources/esp32-dev-kit-drawing.png`). The schematic PDF is still not in the repo. Not a blocker |

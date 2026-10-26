@@ -8,8 +8,9 @@ actually built:
   1. both exposed USB-C ports sit exactly on the front edge (the port wall)
   2. the ESP32's USB-C end overhangs the left edge, so a flashing cable's
      overmold hangs in free air (AUDIT.md #9)
-  3. the ESP32's antenna end overhangs the notch by at least 6 mm, with no
-     carrier under it (AUDIT.md #6)
+  3. the ESP32's antenna end overhangs the notch by the whole antenna
+     (esp_ant_l in boards.scad) plus 0.5 mm, with no carrier under it
+     (AUDIT.md #6)
   4. every mounting hole leaves at least 1.5 mm of FR4 to the edge
      (AUDIT.md #11 -- the old rear holes left 0.5 mm)
 """
@@ -51,8 +52,10 @@ def main():
           f"(module front edge y {y0:.2f}, notch starts y {G.Y_STEP})")
     if usb < 0.5:
         fails.append(f"U3 USB-C end overhangs only {usb:.2f} mm (want >= 0.5)")
-    if ant < 6.0:
-        fails.append(f"U3 antenna overhang {ant:.2f} mm (want >= 6)")
+    want = G.B["esp_ant_l"] + 0.5
+    if ant < want:
+        fails.append(f"U3 antenna overhang {ant:.2f} mm (want >= {want:.2f}: "
+                     f"the {G.B['esp_ant_l']} mm antenna plus 0.5)")
     if y0 <= G.Y_STEP:
         fails.append("carrier extends under the antenna end: the notch starts behind the module")
 

@@ -28,15 +28,26 @@ DRC is now clean on the routed board and is the gate in `build.sh`.
 | 18 | Test points 57 mm apart | **Fixed.** 3.8 mm apart | Placement |
 | 19 | Leads protrude underneath | Unchanged: inherent to THT. Mount on standoffs | — |
 | 20 | Hosts' grounds tied | Unchanged: inherent, benign | — |
-| **21** | **Antenna clearance on its front side** | **Open — owner decision** | Measured from the placement |
+| **21** | **Antenna clearance on its front side** | **Open — owner decision** | Board file + antenna position from Waveshare's drawing |
 
 ### 21. Antenna clearance on the front side (new)
 
 The notch clears the antenna behind it and to its right. In front, the
 carrier's front-right block (U2, J1, GND pour) ends **1.15 mm** from the
-devkit's front edge. If the WROOM module is centred on the devkit, the antenna
-itself is roughly 5–6 mm from that copper (**assumed** — the antenna's position
-on the Waveshare board is not recorded).
+devkit's front edge.
+
+Antenna position, from Waveshare's drawing with the owner's markup
+(`docs/sources/esp32-dev-kit-drawing.png`): **18.00 mm** across, centred
+(dimensioned), reaching **6.35–6.80 mm** in from the end edge (measured off
+the drawing at 11.02 px/mm). So the 7.5 mm overhang puts the whole antenna in
+free air with 0.7–1.15 mm to spare.
+
+Measured from the board file, the nearest carrier copper is:
+
+| Where | Distance | Comment |
+|---|---|---|
+| In front of the antenna (front-right block's GND pour) | **6.55 mm** | The problem: guideline is 15 mm |
+| Behind its inner end (pour beyond the 2.3 mm keep-out strip) | 3.0 mm | Expected: this is the feed end, beside the module's own ground |
 
 Espressif's guidance: put the antenna outside the base board; where it cannot
 be, keep **15 mm** clear around it with no copper, tracks or parts. So the
@@ -46,11 +57,11 @@ current layout meets the first half and not the second.
 |---|---|---|
 | A. Keep as is | Nothing. Probably fine for room-range Bluetooth (~60 %) | 0/10 |
 | B. Rectangle, copper-free corner | Bare FR4 under the antenna: worse | 1/10 |
-| C. Deeper L | ESP32 ~10 mm further back; pour pulled back from the step | 2/10 |
+| C. Deeper L | ESP32 ~8.5 mm further back (board ~79.6 → ~88 mm deep) | 2/10 |
 | D. Antenna off the rear edge | ESP32 turned; board ~25 mm deeper; flashing-port access rethought | 5/10 |
 
-Recommendation: **C**, after confirming where the antenna sits on the devkit
-(one photo or measurement). ~70 % confident it is the best trade.
+Recommendation: **C**. ~75 % confident it is the best trade: cheap with the
+generators, box size is free, and it meets the guideline on every side.
 
 Source: Espressif, *PCB Layout Design* (antenna placement),
 https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32s2/pcb-layout-design.html

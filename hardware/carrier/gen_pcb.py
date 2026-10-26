@@ -46,10 +46,10 @@ RP_COURT = RP_HL + B["usb_over_in"] + 0.25      # courtyard past the module cent
 # Its USB-C end overhangs the LEFT edge by 1 mm so a flashing cable's overmold
 # hangs in free air instead of meeting the carrier (AUDIT.md #9). Its antenna
 # end overhangs a notch by ANT_OVERHANG, Espressif's preferred arrangement
-# for a module on a carrier (AUDIT.md #6). ASSUMPTION to check on the real
-# board: the PCB antenna lies within the last ~7 mm of the dev kit.
+# for a module on a carrier (AUDIT.md #6): the whole antenna (esp_ant_l,
+# measured off Waveshare's drawing) plus 0.7 mm hangs past the notch edge.
 USB_OVERHANG = 1.0
-ANT_OVERHANG = 7.5
+ANT_OVERHANG = round(B["esp_ant_l"] + 0.7, 2)     # 7.5
 ESP_HW, ESP_HD = B["esp_w"] / 2, B["esp_d"] / 2
 ESP_CX = -USB_OVERHANG + ESP_HW
 X_NOTCH = ESP_CX + ESP_HW - ANT_OVERHANG

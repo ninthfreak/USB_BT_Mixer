@@ -68,6 +68,11 @@ esp_hole_dia = 2.60;   // Owner, by eye (calipers flat): about right. Confirm be
 esp_top_h    = 4.50;   // Owner, by eye: 4.5 mm. Sets the interior height
 esp_bot_h    = 0.00;   // Owner, boards in hand: underside is COMPLETELY FLAT
 esp_usb_w    = 8.95;   // drawing
+// PCB antenna, at the short edge opposite the USB-C. Source:
+// docs/sources/esp32-dev-kit-drawing.png (Waveshare's drawing; the red box
+// is the owner's, marking the whole antenna).
+esp_ant_w    = 18.00;  // drawing: across the board, centred (4.9 / 5.1 mm gaps measured)
+esp_ant_l    = 6.80;   // measured off the drawing: outer edge of the owner's box (inner edge 6.35). Not dimensioned by Waveshare
 
 // ── Enclosure fit (shared by the coupon and the box) ─────────────────────
 fit         = 0.20;  // RP board to cradle clearance, per side

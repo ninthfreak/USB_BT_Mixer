@@ -9,5 +9,6 @@ python3 gen_pcb.py
 python3 check_footprints.py
 python3 check_netlist.py
 python3 check_pcb.py
+python3 check_routing.py
 xvfb-run -a kicad-cli sch export pdf -o carrier.pdf carrier.kicad_sch >/dev/null
 echo "carrier.pdf refreshed"

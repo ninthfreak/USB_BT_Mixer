@@ -143,15 +143,32 @@ different for every part. `gen_pcb.origin()` solves for the origin and
 | the render | both front mounting holes drilled through D1 and D2 — invisible to the courtyard test, because holes are Edge.Cuts circles with no courtyard. The check now covers them |
 | `check_footprints.py` | an asymmetric courtyard left by a careless `sed`, 1.3 mm on one side and 0.5 on the other, which shifted placement by 0.4 mm |
 
-### Known tight spots
+### Routing headroom
 
-- **82% of the board is courtyard.** It is dense.
-- **The gap between the two input boards is ~2.2 mm** of free copper. Input 2's
-  power and I2S pads face into it, because both modules face the same way.
-  Those nets will have to run *under* a module — legal, since both are flat
-  underneath — but routing may yet prove this placement needs another pass.
-- The service strip is 4.1 mm. Only parts under ~4 mm tall fit, which is why
-  the bulk cap C1 sits in the left column rather than beside the ESP32's 5V pad.
+An earlier revision of this file called the board dense and routing unproven,
+citing "81% courtyard area". **That figure was being misread.** A courtyard is
+keep-out for other *components*, not for copper. Each module touches the board
+only at its edge pads and is flat underneath, so the whole area beneath both
+RP boards and the ESP32 is free for traces on *both* layers.
+
+`check_routing.py` measures it from the real placement:
+
+| | |
+|---|---|
+| Total minimum trace length | ~930 mm over 23 nets |
+| At 0.4 mm trace / 0.4 mm clearance | ~9% of the available copper |
+| Worst I2S net (BCLK) | 37 mm, against the <100 mm rule in `wiring.md` |
+| Longest net | GND at 142 mm, and GND will be a pour rather than traces |
+| Connected pads in the antenna keep-out | none |
+
+So there is plenty of room. The one genuinely tight spot is the **2.2 mm gap
+between the two input boards**, where input 2's power and I2S pads face
+because both modules point the same way — but those nets drop to the bottom
+layer through a via rather than squeezing through the gap.
+
+The service strip is 4.1 mm, so only parts under ~4 mm tall fit there, which
+is why the bulk cap C1 sits in the left column rather than beside the ESP32's
+5V pad.
 
 ## Still open
 

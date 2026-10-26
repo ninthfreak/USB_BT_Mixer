@@ -23,35 +23,36 @@ SCAD = HERE.parents[1] / "enclosure" / "boards.scad"
 B = {n: float(v) for n, v in
      re.findall(r"^\s*(\w+)\s*=\s*(-?[\d.]+)\s*;", SCAD.read_text(), re.M)}
 
-W, H = 58.0, 74.0            # carrier outline, inside the 59.8 x 74.94 interior
+# 64 mm wide, not 58. At 58 the two input boards left only a 2.2 mm channel
+# between them, and SIX of input 2's nets need access from that side because
+# both modules face the same way. The router could not fit them and nor could
+# a person. The box is ours to size (the owner said so), so the board grew
+# rather than the route getting cleverer. The enclosure needs ~5 mm more width.
+W, H = 64.0, 74.0
 EDGE, LINE = 0.10, 0.12
 
 # Module centres. The RP boards span y 0..33 so their EXPOSED ports land on
 # the front edge; the ESP32 is turned 180 deg so header J3 (power + I2S)
 # faces them, which puts the antenna at the back RIGHT corner.
 # Desired COURTYARD CENTRE of each part, and its rotation.
+# Desired COURTYARD CENTRE of each part, and its rotation.
 PLACE = {
     "U1": (17.55, 17.00, 0),
-    "U2": (40.45, 17.00, 0),
-    "U3": (29.00, 54.30, 180),
-    # Service strip between the modules: only parts under ~4 mm tall fit, and
-    # the four series resistors belong here anyway, hard against the ESP32's
-    # J3 row at the driving end of both clocks.
+    "U2": (46.45, 17.00, 0),      # 11.4 mm clear between the two modules
+    "U3": (32.00, 53.80, 180),
+    # Service strip: only parts under ~4 mm tall fit, and the four series
+    # resistors belong here anyway, against the ESP32's J3 row.
     "C2": (5.00, 36.4, 0),
-    "R1": (14.00, 36.4, 0), "R2": (24.00, 36.4, 0),
-    "R3": (34.00, 36.4, 0), "R4": (44.00, 36.4, 0),
-    # Left column, below the front mounting hole: input 1's diode and bypass,
-    # then the rail bulk cap and a rail test point.
+    "R1": (15.00, 36.4, 0), "R2": (26.00, 36.4, 0),
+    "R3": (37.00, 36.4, 0), "R4": (48.00, 36.4, 0),
+    # Left column, below the front mounting hole.
     "D1": (3.40, 10.76, 90), "C3": (3.40, 20.07, 90),
     "C1": (3.40, 26.37, 90), "TP1": (3.40, 30.97, 0),
-    # Right column. Input 2's power pads face the centre gap, which is only
-    # ~2 mm of free copper, so its diode and bypass sit out here and the 5V
-    # trace runs under the module -- fine for DC, and both boards are flat
-    # underneath (review-notes #23).
-    "D2": (54.45, 10.76, 90), "C4": (54.45, 20.07, 90),
-    "TP2": (54.45, 24.87, 0), "SJ1": (54.45, 27.97, 0), "SJ2": (54.45, 31.07, 0),
+    # Right column.
+    "D2": (60.45, 10.76, 90), "C4": (60.45, 20.07, 90),
+    "TP2": (60.45, 24.87, 0), "SJ1": (60.45, 27.97, 0), "SJ2": (60.45, 31.07, 0),
     # Behind the ESP32, reachable with the lid off.
-    "J1": (29.00, 72.10, 90),
+    "J1": (32.00, 72.10, 90),
 }
 MOUNT = [(3.0, 3.0), (W - 3.0, 3.0), (3.0, 72.1), (W - 3.0, 72.1)]
 MOUNT_D = 2.8   # M2.5 clearance

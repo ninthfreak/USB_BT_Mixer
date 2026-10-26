@@ -22,13 +22,15 @@ below) does not affect the land pattern.
 | `netlist.py` | **Single source of truth** for connectivity. Parts, pin maps, nets, footprint assignments, and what is deliberately left unconnected |
 | `gen_fp.py` | Emits the two module land patterns into `carrier.pretty/`, from `enclosure/boards.scad` |
 | `gen_sch.py` | Emits `carrier.kicad_sch` |
-| `gen_pcb.py` | Emits `carrier.kicad_pcb`: outline and placement. **Unrouted** |
+| `gen_pcb.py` | Emits `carrier.kicad_pcb`: outline and placement |
+| `route.py` | Grid A* router over two layers; writes tracks and vias into it |
 | `gen_table.py` | Emits `CONNECTIONS.md` |
 | `check_netlist.py` | Reads the netlist back *out* of the schematic and diffs it against `netlist.py`; also resolves every footprint and checks its pad numbers |
 | `check_footprints.py` | Recomputes every pad coordinate from `boards.scad`; checks each courtyard encloses its fab outline and is symmetric |
 | `check_pcb.py` | Courtyards inside the outline, none overlapping, no part on a mounting hole, exposed ports on the front edge |
 | `check_routing.py` | Net lengths, I2S against the <100 mm rule, copper headroom, nothing live in the antenna keep-out |
 | `check_pads_vs_kicad.py` | **Independent.** Rasterises F.Cu and compares every pad centroid to where we think it is |
+| `check_clearance.py` | Every same-layer pair of different nets, measured edge to edge against the 0.25 mm rule |
 | `build.sh` | Runs all of it and refreshes `carrier.pdf` |
 
 ```sh
@@ -121,21 +123,44 @@ Both checks are proven to detect faults, not merely to pass:
 - the courtyard check failed the pre-fix file, which did not enclose the
   programming port's 1.0 mm overhang, and passes the corrected one
 
-## Layout: placed, not routed
+## Layout: 64 x 74 mm, routed
 
-`carrier.kicad_pcb` is **58 x 74 mm, 18 parts placed, no tracks**. Routing is
-deliberately left for the KiCad PCB editor, for two reasons:
+**23/23 nets, 358 segments, 74 vias, 1185 mm of track.** Design rules are
+0.40 mm trace on 0.25 mm clearance, vias 0.8 mm on a 0.4 mm drill — loose for
+any fab (JLCPCB allows 0.127 mm), so the board is cheap and tolerant.
 
-1. KiCad 7's `kicad-cli` has **no DRC subcommand** (it arrived in 8), so a
-   generated layout cannot be machine-checked for clearance here. Generating
-   tracks I cannot verify would be worse than generating none.
-2. This board has a 2.4 GHz antenna and clock traces. Routing quality is a
-   judgement call that wants eyes on the board and live DRC.
+### Why 64 mm and not 58
+
+At 58 mm the two input boards left a **2.2 mm channel** between them, and
+*six* of input 2's nets need access from that side, because both modules face
+the same way and so its power and I2S edge points into the gap. The router
+could not fit them and neither could a person. Widening the board to 64 gives
+an 11.4 mm channel and everything routes.
+
+This was the right fix rather than a cleverer route: the box is ours to size.
+**The enclosure needs about 5 mm more width to suit.**
+
+### What this route is and is not
+
+It is machine-routed and verified: every net connected, every same-layer pair
+of different nets at least 0.25 mm apart, nothing in the antenna keep-out,
+nothing off the edge. It is **not pretty** — long diagonals, 74 vias, and
+traces that wander where a person would go straight. A pass in the editor
+would tidy it considerably without changing anything electrical.
+
+There is **no ground pour**. A zone's filled shape is computed by KiCad and
+cannot be verified here, so ground is routed as ordinary traces instead.
+Adding a B.Cu pour in the editor afterwards is one action and KiCad will DRC
+it; that would improve clock return paths.
+
+**A DRC pass in the KiCad editor is still required before ordering.**
+`check_clearance.py` covers copper-to-copper on the same layer, board edge and
+keep-out. It does not cover soldermask slivers, drill-to-drill spacing,
+annular ring, or anything about zones.
 
 Placement is by **courtyard centre**, not footprint origin: several stock
 footprints put their origin on pad 1, so a literal `(x, y)` meant something
-different for every part. `gen_pcb.origin()` solves for the origin and
-`check_pcb.py` reuses the same function, so the two cannot disagree.
+different for every part.
 
 ### Why there is an independent check
 
@@ -165,6 +190,7 @@ vs KiCad   -> FAIL: C1.2 we say (3.40,27.62); nearest KiCad shape (3.37,25.09)
 |---|---|
 | `check_pcb.py`, first run | ~20 real collisions in my first placement, including every part in the 6 mm service strip sitting inside the ESP32's courtyard |
 | the render | both front mounting holes drilled through D1 and D2 — invisible to the courtyard test, because holes are Edge.Cuts circles with no courtyard. The check now covers them |
+| `check_clearance.py`, first run | 22 clearance violations in the first route, worst −0.400 mm. Three router bugs: clearance stamped for a trace but not for a via landing beside one; releasing a net's own pads also erased other nets' traces in that box; and a net's own traces were stamped as obstacles against itself, stranding its last pad |
 | `check_footprints.py` | an asymmetric courtyard left by a careless `sed`, 1.3 mm on one side and 0.5 on the other, which shifted placement by 0.4 mm |
 
 ### Routing headroom

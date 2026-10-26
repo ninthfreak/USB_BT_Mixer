@@ -373,3 +373,26 @@ Dropping it to 0 shortens the enclosure by 1.5 mm, removes the cradle ledges
 (the board would sit on the floor), and invalidates the printed test coupon.
 That is the owner's call, not a correction to apply unasked, so the value
 stands and only the comment has changed.
+
+## 24. Carrier audit and fix pass (2026-10-26)
+
+Full record: `hardware/carrier/AUDIT.md`. Four findings change the circuit
+itself, not just the PCB, so they apply to the loom build too and have been
+carried into `hardware/wiring.md` and the wiring guide.
+
+| What was wrong | Now | Confidence |
+|---|---|---|
+| `wiring.md` said every board is always powered together. **False:** with one host connected, the other input board is unpowered (its diode blocks the rail) while the ESP32 keeps driving it | 1 kΩ in series with BCLK, LRCK (was 33 Ω) and both UART TX lines (was nothing): ~3 mA injection per pin | 90% the mechanism is real; RP2350 injection limit not verified |
+| BCLK/LRCK loop-backs on GPIO36/39, which Espressif documents as glitching low when the SAR ADC powers up; field reports tie it to A2DP streaming | Loop-backs on GPIO13 and GPIO32 | Erratum verified; ~70% it would have bitten |
+| GPIO35 (input 1 audio) is input-only with no internal pull: floats when input 1 is unpowered | 100 kΩ pull-down | High |
+| GP29 hard-wired to GND: a firmware mistake driving it high is a dead short | 4.7 kΩ pull-down (holds against RP2350-E9 leakage) | High |
+
+Also found: the wiring guide's figure 3 drew the loop-back and input-1 audio
+wires landing 2 mm left of their pads, between pins. Fixed with the rest.
+
+**Process lesson.** KiCad's DRC had been available all along through the
+`pcbnew` Python bindings; only `kicad-cli` lacks it. Every serious PCB error
+was invisible to the project's custom checks and visible to DRC. DRC is now
+the gate in `hardware/carrier/build.sh`, and each custom check has been shown
+to fail on a deliberately broken board.
+

@@ -1,5 +1,66 @@
 # Carrier board audit — 2026-10-26
 
+## Status after the fix pass (same day)
+
+All 20 findings below were worked through in the suggested order. KiCad's own
+DRC is now clean on the routed board and is the gate in `build.sh`.
+**One new open item (#21) needs an owner decision before ordering.**
+
+| # | Finding | Now | Verified by |
+|---|---|---|---|
+| 1 | Diodes reversed | **Fixed.** `"d": {"K": 1, "A": 2}`; symbol redrawn | `check_netlist.py` polarity check: the old mapping fails it 4 ways |
+| 2 | Nine open connections | **Fixed.** Router rewritten on pcbnew with real pad shapes; THT pads on both layers | DRC: 0 unconnected. Removing one track makes it fail |
+| 3 | Back-feed into the unpowered board | **Fixed** (resistor option). R1–R4 now 1 kΩ; R5/R6 1 kΩ in each UART TX | Netlist; CONNECTIONS.md |
+| 4 | Loop-backs on GPIO36/39 | **Fixed.** BCLK loops to IO13, LRCK to IO32. IO36/39 declared no-connect | `check_netlist.py` (they must float) |
+| 5 | Drill spacing | **Fixed.** ESP32 NPTH removed; router keeps 0.5 mm drill to drill | DRC with `hole_to_hole` 0.5 mm |
+| 6 | Copper under the antenna | **Improved, see #21.** Antenna end overhangs a notch by 7.5 mm; 4 ESP32 pads (3V3, EN, a GND, IO23) have no land | `check_pcb.py` (overhang ≥ 6 mm); DRC rule area |
+| 7 | No pad nets / schematic link | **Fixed.** `gen_pcb.py` now builds the board with pcbnew: 72/72 pads netted, 21/21 linked, library IDs set | `drc.py` compares every pad's net with `netlist.py` |
+| 8 | No ground plane | **Fixed.** GND pour on both layers, 56 stitching vias. Bottom pour covers 87 % of the board | `check_routing.py` (≥ 80 %, ≥ 20 vias) |
+| 9 | ESP32 USB-C cable fouls the carrier | **Fixed.** That end overhangs the left edge by 1 mm | `check_pcb.py` (≥ 0.5 mm) |
+| 10 | Stale placement | **Fixed.** Re-placed: D2 9.0 mm and C4 4.5 mm from U2's 5V pad (were 27 and 24); GP29 pull-downs beside their pins | Render; pad coordinates |
+| 11 | Hole webs 0.5 mm | **Fixed.** 1.61–1.65 mm | `check_pcb.py` (≥ 1.5 mm) |
+| 12 | Courtyards touching | **Fixed** | DRC courtyard test |
+| 13 | GPIO35 floats | **Fixed.** R7 100 kΩ pull-down | Netlist |
+| 14 | All traces 0.4 mm | **Fixed.** VBUS1/2 and RAIL 0.8 mm | `check_routing.py` |
+| 15 | Many vias, untidy | **Better.** Tracks string-pulled (any angle); 59 routing vias. Still machine-routed | Render |
+| 16 | Silkscreen | **Fixed.** Labels for inputs, RAIL/GND, J1 pins, version | DRC silk tests |
+| 17 | GP29 hard-shorted | **Fixed.** 4.7 kΩ pull-downs R8/R9 (fit or omit) | Netlist |
+| 18 | Test points 57 mm apart | **Fixed.** 3.8 mm apart | Placement |
+| 19 | Leads protrude underneath | Unchanged: inherent to THT. Mount on standoffs | — |
+| 20 | Hosts' grounds tied | Unchanged: inherent, benign | — |
+| **21** | **Antenna clearance on its front side** | **Open — owner decision** | Measured from the placement |
+
+### 21. Antenna clearance on the front side (new)
+
+The notch clears the antenna behind it and to its right. In front, the
+carrier's front-right block (U2, J1, GND pour) ends **1.15 mm** from the
+devkit's front edge. If the WROOM module is centred on the devkit, the antenna
+itself is roughly 5–6 mm from that copper (**assumed** — the antenna's position
+on the Waveshare board is not recorded).
+
+Espressif's guidance: put the antenna outside the base board; where it cannot
+be, keep **15 mm** clear around it with no copper, tracks or parts. So the
+current layout meets the first half and not the second.
+
+| Option | Change | Difficulty |
+|---|---|---|
+| A. Keep as is | Nothing. Probably fine for room-range Bluetooth (~60 %) | 0/10 |
+| B. Rectangle, copper-free corner | Bare FR4 under the antenna: worse | 1/10 |
+| C. Deeper L | ESP32 ~10 mm further back; pour pulled back from the step | 2/10 |
+| D. Antenna off the rear edge | ESP32 turned; board ~25 mm deeper; flashing-port access rethought | 5/10 |
+
+Recommendation: **C**, after confirming where the antenna sits on the devkit
+(one photo or measurement). ~70 % confident it is the best trade.
+
+Source: Espressif, *PCB Layout Design* (antenna placement),
+https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32s2/pcb-layout-design.html
+
+---
+
+## The original audit
+
+*As written before the fix pass. Verdict at the time: do not order.*
+
 **Verdict: do not order this board.** Two errors would stop it working at all,
 and several more would cause faults in use or at the fab. All are fixable before
 ordering; none needs a new approach.

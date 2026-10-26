@@ -129,10 +129,17 @@ def diode(c,x,y,vert=True):
     else:    s+=f'<rect x="{X(x+w/2-0.55)}" y="{Y(y+h/2)}" width="{L(0.55)}" height="{L(h)}" fill="#E6E8EA"/>'
     return s
 
-def resistor(c,x,y,vert=True):
+# Real colour-code bands, so the drawing matches the part in hand. The guide
+# still says to read values with a meter: 1k and 100k differ only in red vs
+# yellow, which red/green colour blindness can make unreliable.
+BANDS = {"1k":   ("#7B4A1E", "#222", "#C62828", "#C9A227"),
+         "100k": ("#7B4A1E", "#222", "#F2C40F", "#C9A227"),
+         "4k7":  ("#F2C40F", "#7E57C2", "#C62828", "#C9A227")}
+
+def resistor(c,x,y,vert=True,value="1k"):
     X,Y,L=c.X,c.Y,c.L; w,h=(2.4,6.4) if vert else (6.4,2.4)
     s=f'<rect x="{X(x-w/2)}" y="{Y(y+h/2)}" width="{L(w)}" height="{L(h)}" rx="{L(1.0)}" fill="#D6C3A0" stroke="#9C8A68" stroke-width="0.8"/>'
-    for k,col in enumerate(("#E07B29","#E07B29","#222","#C9A227")):
+    for k,col in enumerate(BANDS[value]):
         off=h/2-1.2-k*1.0
         if vert: s+=f'<rect x="{X(x-w/2)}" y="{Y(y+off)}" width="{L(w)}" height="{L(0.55)}" fill="{col}"/>'
         else:    s+=f'<rect x="{X(x+off-0.55)}" y="{Y(y+h/2)}" width="{L(0.55)}" height="{L(h)}" fill="{col}"/>'

@@ -1,5 +1,5 @@
 ** Drc report for /home/user/USB_BT_Mixer/hardware/carrier/carrier.kicad_pcb **
-** Created on 2026-10-26 20:04:44 **
+** Created on 2026-10-26 20:17:11 **
 
 ** Found 22 DRC violations **
 [lib_footprint_issues]: The current configuration does not include the library 'Resistor_THT'.

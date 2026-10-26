@@ -4,7 +4,7 @@ The guide's four figures are **pictorials**, not schematics: they draw the real
 boards — PCB outline with the retention notches cut, both USB-C shells, the gold
 castellated pads with their silkscreen numbers, the WROOM module, and component
 bodies with their real markings (a diode's silver cathode band, a resistor's
-orange-orange-black-gold stripes).
+real colour-code stripes, set per value in `BANDS`).
 
 | File | What it does |
 |---|---|

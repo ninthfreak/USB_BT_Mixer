@@ -65,8 +65,8 @@ def main():
           "pattern is there if you ever want it.", "",
           "The port end of each input board has **no pads at all** -- the",
           "nearest joint is 9.8 mm from the USB-C shell -- so plug forces were",
-          "never going to be held by solder. The enclosure lid's press posts",
-          "take that load, as they already do today.", ""]
+          "never going to be held by solder. The enclosure has to take that",
+          "load, as the current lid's press posts do.", ""]
     tot_s = tot_a = 0
     for ref in ("U1", "U2", "U3"):
         allp = pads[ref]
@@ -75,9 +75,10 @@ def main():
         off = {N.resolve(n, N.pin_table())[1] for n in N.OFF_BOARD
                if n.split(".")[0] == ref}
         skip = [p for p in sorted(allp) if p not in cs and p not in ms and p not in off]
-        tot_s += len(cs) + len(ms); tot_a += len(allp)
+        lands = len(allp) - len(off)
+        tot_s += len(cs) + len(ms); tot_a += lands
         L += [f"### {ref} ({N.PARTS[ref]['value']}) — solder "
-              f"{len(cs) + len(ms)} of {len(allp)}", "",
+              f"{len(cs) + len(ms)} of {lands} lands", "",
               "| | Pads |", "|---|---|",
               "| **Net** | " + ", ".join(f"`{p} {allp[p]}`" for p in cs) + " |",
               "| **Mechanical** | " + ", ".join(f"`{p} {allp[p]}`" for p in ms) + " |",

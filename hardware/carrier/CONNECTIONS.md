@@ -96,18 +96,10 @@ pattern is there if you ever want it.
 
 The port end of each input board has **no pads at all** -- the
 nearest joint is 9.8 mm from the USB-C shell -- so plug forces were
-never going to be held by solder. The enclosure lid's press posts
-take that load, as they already do today.
+never going to be held by solder. The enclosure has to take that
+load, as the current lid's press posts do.
 
-### U1 (RP2350-USB-C) — solder 12 of 18
-
-| | Pads |
-|---|---|
-| **Net** | `1 5V`, `2 GND`, `4 GP29`, `5 GP28`, `6 GP27`, `7 GP26`, `13 GP3`, `14 GP4`, `15 GP5` |
-| **Mechanical** | `9 GP9`, `10 GP0`, `18 GP8` |
-| Leave bare | 3 3V3, 8 GP10, 11 GP1, 12 GP2, 16 GP6, 17 GP7 |
-
-### U2 (RP2350-USB-C) — solder 12 of 18
+### U1 (RP2350-USB-C) — solder 12 of 18 lands
 
 | | Pads |
 |---|---|
@@ -115,7 +107,15 @@ take that load, as they already do today.
 | **Mechanical** | `9 GP9`, `10 GP0`, `18 GP8` |
 | Leave bare | 3 3V3, 8 GP10, 11 GP1, 12 GP2, 16 GP6, 17 GP7 |
 
-### U3 (ESP32-DEV-KIT) — solder 19 of 38
+### U2 (RP2350-USB-C) — solder 12 of 18 lands
+
+| | Pads |
+|---|---|
+| **Net** | `1 5V`, `2 GND`, `4 GP29`, `5 GP28`, `6 GP27`, `7 GP26`, `13 GP3`, `14 GP4`, `15 GP5` |
+| **Mechanical** | `9 GP9`, `10 GP0`, `18 GP8` |
+| Leave bare | 3 3V3, 8 GP10, 11 GP1, 12 GP2, 16 GP6, 17 GP7 |
+
+### U3 (ESP32-DEV-KIT) — solder 19 of 34 lands
 
 | | Pads |
 |---|---|
@@ -124,7 +124,7 @@ take that load, as they already do today.
 | Leave bare | 4 IO39, 5 IO34, 11 IO27, 13 IO12, 16 SD2, 17 SD3, 18 CMD, 23 TX0, 24 RX0, 29 IO5, 33 IO0, 34 IO2, 35 IO15, 36 SD1, 37 SD0 |
 | No land (antenna overhang) | 1 3V3, 2 EN, 20 GND, 21 IO23 |
 
-**43 joints instead of 74.**
+**43 joints instead of 70.**
 
 
 ## Deliberately not connected

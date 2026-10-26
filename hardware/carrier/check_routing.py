@@ -1,110 +1,87 @@
-#!/usr/bin/env python3
-"""Pre-routing feasibility estimate for the placement in gen_pcb.py.
+#!/usr/bin/python3
+"""Check the ROUTED board for design intent that KiCad's DRC cannot know.
 
-There is no DRC in KiCad 7's CLI and no autorouter, so this does not prove
-routability. What it does measure, from the real placement:
+drc.py owns clearance, connectivity, keep-outs and holes. This reads the
+tracks route.py actually laid and checks what the rules alone would pass:
 
-  * minimum spanning length of every net (a lower bound on trace length)
-  * the I2S runs against the <10 cm rule in hardware/wiring.md
-  * whether any CONNECTED pad falls inside the antenna keep-out
-  * how much copper area is actually available
-
-Module pads are exact (U1/U2 at 0 deg, U3 at 180 deg). Two-pin passives are
-approximated by their courtyard centre, so net lengths are underestimates by
-up to the lead pitch of each passive on the net -- stated, not hidden.
+  1. power nets (VBUS1, VBUS2, RAIL) are 0.8 mm wide everywhere -- the DRC
+     minimum is 0.4 mm, which would let a thin neck through
+  2. every I2S chain, ESP32 pin to input-board pin, is under 100 mm.
+     Measured as the total copper of the nets in the chain, which is an
+     upper bound on any one path through it
+  3. the bottom pour stays a ground plane: at least 80 % of the board area
+     is filled GND copper on B.Cu, so the clocks on top have a return path
+  4. the two pours are stitched: at least 20 GND vias
 """
-import sys, itertools, math
-import netlist as N
+import collections, pathlib, sys
+import pcbnew
+
+HERE = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
 import gen_pcb as G
 
-def module_pads(ref):
-    """Exact global pad positions for a 0/180-degree part."""
-    fpid = N.FOOTPRINTS[ref]
-    ox, oy, rot = G.origin(ref, fpid)
-    out = {}
-    import re
-    for num, x, y in re.findall(
-            r'\(pad\s+"(\d+)"\s+\S+\s+\S+\s+\(at (-?[\d.]+) (-?[\d.]+)', G.load_fp(fpid)):
-        px, py = float(x), float(y)
-        if rot == 180:
-            px, py = -px, -py
-        elif rot != 0:
-            return None
-        out[int(num)] = (ox + px, oy + py)
-    return out
-
-def points():
-    """(ref, pad) -> (x, y), exact where possible, centre otherwise."""
-    pts, approx = {}, set()
-    for ref in G.PLACE:
-        mp = module_pads(ref)
-        if mp is not None:
-            for num, xy in mp.items():
-                pts[(ref, num)] = xy
-        else:
-            cx, cy, _ = G.PLACE[ref]
-            for num in N.pad_names()[ref]:
-                pts[(ref, num)] = (cx, cy)
-                approx.add(ref)
-    return pts, approx
-
-def mst_len(ps):
-    if len(ps) < 2:
-        return 0.0
-    unused, used, total = list(ps[1:]), [ps[0]], 0.0
-    while unused:
-        d, i, p = min((math.dist(u, v), i, u)
-                      for i, u in enumerate(unused) for v in used)
-        total += d; used.append(p); unused.pop(i)
-    return total
+MM = pcbnew.ToMM
+POWER = {"VBUS1": 0.8, "VBUS2": 0.8, "RAIL": 0.8}
+I2S_BUDGET = 100.0
+# ESP32 pin -> series resistor -> input board pin. AUD nets have no resistor.
+CHAINS = {"BCLK to in 1": ("BCLK", "BCLK1"), "BCLK to in 2": ("BCLK", "BCLK2"),
+          "LRCK to in 1": ("LRCK", "LRCK1"), "LRCK to in 2": ("LRCK", "LRCK2"),
+          "AUD1": ("AUD1",), "AUD2": ("AUD2",)}
+B_FILL_MIN, STITCH_MIN = 0.80, 20
 
 def main():
-    pts, approx = points()
-    nets = N.resolved_nets()
-    ant = (G.W - 10.0, 39.0, G.W, 67.0)
-    fails, rows = [], []
+    b = pcbnew.LoadBoard(str(HERE / "carrier.kicad_pcb"))
+    fails = []
+    length = collections.Counter()
+    bottom = collections.Counter()
+    vias = collections.Counter()
+    for t in b.GetTracks():
+        net = t.GetNetname()
+        if t.GetClass() == "PCB_VIA":
+            vias[net] += 1
+            continue
+        L = MM(t.GetLength())
+        length[net] += L
+        if t.GetLayer() == pcbnew.B_Cu:
+            bottom[net] += L
+        if net in POWER and MM(t.GetWidth()) < POWER[net] - 1e-6:
+            fails.append(f"{net}: a {MM(t.GetWidth()):.2f} mm segment (want {POWER[net]})")
 
-    for name, nodes in sorted(nets.items()):
-        ps = [pts[n] for n in nodes if n in pts]
-        L = mst_len(ps)
-        rough = any(r in approx for r, _ in nodes)
-        rows.append((name, len(nodes), L, rough))
-        for (r, pad), (x, y) in zip(nodes, ps):
-            if ant[0] <= x <= ant[2] and ant[1] <= y <= ant[3]:
-                fails.append(f"net {name}: {r}.{pad} at ({x:.1f},{y:.1f}) is "
-                             f"inside the antenna keep-out")
+    print(f"{'net':8} {'track mm':>9} {'on B.Cu':>8} {'vias':>5}")
+    for net in sorted(length):
+        print(f"{net:8} {length[net]:9.1f} {bottom[net]:8.1f} {vias[net]:5}")
+    total = sum(length.values())
+    print(f"total {total:.0f} mm, {sum(bottom.values()):.0f} mm of it on B.Cu")
 
-    print(f"{'net':8} {'pads':>4} {'min length':>11}")
-    for name, n, L, rough in rows:
-        print(f"{name:8} {n:>4} {L:>9.1f} mm {'~' if rough else ''}")
-    total = sum(r[2] for r in rows)
-    longest = max(rows, key=lambda r: r[2])
-    print(f"\ntotal {total:.0f} mm over {len(rows)} nets; "
-          f"longest {longest[0]} at {longest[2]:.1f} mm")
-    print("(~ = includes a passive approximated by its centre; real length is longer)")
+    print(f"\nI2S chains (upper bound, budget {I2S_BUDGET:.0f} mm):")
+    for name, nets in CHAINS.items():
+        L = sum(length[n] for n in nets)
+        print(f"  {name:13} {L:6.1f} mm  {'ok' if L < I2S_BUDGET else 'TOO LONG'}")
+        if L >= I2S_BUDGET:
+            fails.append(f"I2S chain {name}: {L:.1f} mm")
 
-    i2s = [r for r in rows if r[0].startswith(("BCLK", "LRCK", "AUD"))]
-    worst = max(i2s, key=lambda r: r[2])
-    print(f"\nI2S: worst net {worst[0]} at {worst[2]:.1f} mm "
-          f"(wiring.md asks for <100 mm) -> {'OK' if worst[2] < 100 else 'TOO LONG'}")
-    if worst[2] >= 100:
-        fails.append(f"I2S net {worst[0]} exceeds 100 mm")
-
-    area = G.W * G.H
-    print(f"\ncopper available: {area:.0f} mm2 per layer, {2*area:.0f} mm2 over two layers")
-    print(f"the module areas are free for routing on BOTH layers: the modules")
-    print(f"touch only their edge pads and are flat underneath (review-notes #23)")
-    # 0.4 mm trace on 0.4 mm clearance is a conservative hobby-fab default
-    used = total * 0.8
-    print(f"at 0.4 mm trace / 0.4 mm clearance that is ~{used:.0f} mm2, "
-          f"{100*used/(2*area):.0f}% of the copper")
+    area = G.W * G.Y_STEP + G.X_NOTCH * (G.H - G.Y_STEP)
+    fill = {}
+    for z in b.Zones():
+        if z.GetIsRuleArea():
+            continue
+        for lid, key in ((pcbnew.F_Cu, "F"), (pcbnew.B_Cu, "B")):
+            if z.IsOnLayer(lid):
+                fill[key] = fill.get(key, 0) + MM(MM(z.GetFilledPolysList(lid).Area()))
+    print(f"\nGND pour fill: top {fill.get('F', 0) / area:.0%}, "
+          f"bottom {fill.get('B', 0) / area:.0%} of {area:.0f} mm2")
+    if fill.get("B", 0) / area < B_FILL_MIN:
+        fails.append(f"bottom GND pour covers {fill.get('B', 0) / area:.0%} (want >= {B_FILL_MIN:.0%})")
+    print(f"GND vias: {vias['GND']}")
+    if vias["GND"] < STITCH_MIN:
+        fails.append(f"only {vias['GND']} GND vias (want >= {STITCH_MIN})")
 
     if fails:
         print("\nFAIL")
         for f in fails:
             print("  -", f)
         sys.exit(1)
-    print("\nOK: no connected pad in the keep-out, I2S within budget")
+    print("\nOK: power nets full width, I2S within budget, bottom pour solid and stitched")
 
 if __name__ == "__main__":
     main()

@@ -10,10 +10,11 @@ import netlist as N
 
 GROUPS = [
     ("Power", ["VBUS1", "VBUS2", "RAIL", "GND"]),
-    ("Chain input, grounded through a cuttable bridge", ["GP29_1", "GP29_2"]),
+    ("Chain input, held low by a pull-down (omit it to free the pin)", ["GP29_1", "GP29_2"]),
     ("I2S clocks (ESP32 is master)", ["BCLK", "BCLK1", "BCLK2", "LRCK", "LRCK1", "LRCK2"]),
     ("I2S audio (returns to the ESP32)", ["AUD1", "AUD2"]),
-    ("UART, one pair per input board", ["U1_TX", "U1_RX", "U2_TX", "U2_RX"]),
+    ("UART, one pair per input board", ["U1_TX", "ESP_TX1", "U1_RX",
+                                        "U2_TX", "ESP_TX2", "U2_RX"]),
     ("Breakout header", ["DBG1", "DBG2", "SP1", "SP2", "SP3"]),
 ]
 
@@ -71,14 +72,20 @@ def main():
         allp = pads[ref]
         cs = sorted(conn.get(ref, {}))
         ms = sorted(mech.get(ref, {}))
-        skip = [p for p in sorted(allp) if p not in cs and p not in ms]
+        off = {N.resolve(n, N.pin_table())[1] for n in N.OFF_BOARD
+               if n.split(".")[0] == ref}
+        skip = [p for p in sorted(allp) if p not in cs and p not in ms and p not in off]
         tot_s += len(cs) + len(ms); tot_a += len(allp)
         L += [f"### {ref} ({N.PARTS[ref]['value']}) — solder "
               f"{len(cs) + len(ms)} of {len(allp)}", "",
               "| | Pads |", "|---|---|",
               "| **Net** | " + ", ".join(f"`{p} {allp[p]}`" for p in cs) + " |",
               "| **Mechanical** | " + ", ".join(f"`{p} {allp[p]}`" for p in ms) + " |",
-              "| Leave bare | " + ", ".join(f"{p} {allp[p]}" for p in skip) + " |", ""]
+              "| Leave bare | " + ", ".join(f"{p} {allp[p]}" for p in skip) + " |"]
+        if off:
+            L.append("| No land (antenna overhang) | " +
+                     ", ".join(f"{p} {allp[p]}" for p in sorted(off)) + " |")
+        L.append("")
     L += [f"**{tot_s} joints instead of {tot_a}.**", ""]
 
     L += ["", "## Deliberately not connected", "",

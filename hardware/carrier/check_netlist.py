@@ -10,7 +10,8 @@ source. Checks, in order:
   3. every pad in NO_CONNECT really is unconnected
   4. no pad is left floating that isn't named in NO_CONNECT
   5. every mechanical-only solder pad really is unconnected
-  6. every part carries a footprint, that footprint file exists, and its pad
+  6. every polarised part's marked pin lands on the pad its footprint marks
+  7. every part carries a footprint, that footprint file exists, and its pad
      numbers are exactly the symbol's pad numbers
 """
 import subprocess, sys, pathlib, re, xml.etree.ElementTree as ET
@@ -66,10 +67,46 @@ def check_footprints(fails):
             continue
         nums = set(re.findall(r'\(pad\s+"([^"]+)"', f.read_text()))
         nums.discard("")                       # NPTH mounting holes
-        want = {str(n) for n in pads[ref]}
+        off = {str(N.resolve(n, N.pin_table())[1]) for n in N.OFF_BOARD
+               if n.split(".")[0] == ref}
+        want = {str(n) for n in pads[ref]} - off
         if nums != want:
             fails.append(f"{ref}: {fpid} pads {sorted(nums)} != symbol pads "
                          f"{sorted(want)}")
+
+# Which pin carries the polarity mark, per kind. KiCad's library convention
+# (KLC) marks pin 1 with a RECTANGULAR pad; for a diode pin 1 is the cathode
+# and also carries a silkscreen "K", for a polarised cap it is "+".
+POLARITY = {"d": "K", "cpol": "+"}
+
+def check_polarity(fails):
+    """Compare what each polarised pin IS against the footprint's own marks.
+    The pad-number comparison below cannot see this: {1, 2} == {1, 2} whether
+    or not the anode and cathode are swapped, which is how both diodes went
+    on the board reversed."""
+    for ref, part in N.PARTS.items():
+        mark = POLARITY.get(part["kind"])
+        if not mark:
+            continue
+        ours = N.PASSIVE_PINS[part["kind"]][mark]
+        f = footprint_file(N.FOOTPRINTS[ref])
+        txt = f.read_text()
+        pads = {int(num): (shape, float(x), float(y)) for num, shape, x, y in re.findall(
+            r'\(pad "(\d+)" \S+ (\w+) \(at (-?[\d.]+) (-?[\d.]+)', txt)}
+        rect = [p for p, (shape, _, _) in pads.items() if shape == "rect"]
+        if rect != [ours]:
+            fails.append(f"{ref}: our '{mark}' is pad {ours}, but the footprint "
+                         f"marks pad {rect} with the rectangular pin-1 pad")
+        if part["kind"] == "d":
+            k = re.search(r'\(fp_text user "K" \(at (-?[\d.]+) (-?[\d.]+)', txt)
+            if not k:
+                fails.append(f"{ref}: footprint has no 'K' marking to check against")
+                continue
+            kx, ky = float(k.group(1)), float(k.group(2))
+            near = min(pads, key=lambda p: (pads[p][1]-kx)**2 + (pads[p][2]-ky)**2)
+            if near != ours:
+                fails.append(f"{ref}: silkscreen 'K' sits at pad {near}, but our "
+                             f"cathode is pad {ours} -- the diode would go in reversed")
 
 def main():
     export()
@@ -100,8 +137,12 @@ def main():
     for pads in floating.values():
         float_pads |= set(pads)
     declared = set()
-    for node in list(N.NO_CONNECT) + list(N.UNUSED):
+    for node in list(N.NO_CONNECT) + list(N.UNUSED) + list(N.OFF_BOARD):
         declared.add(N.resolve(node, table))
+    # a pad with no land on the carrier cannot be connected to anything
+    for node in N.OFF_BOARD:
+        if N.resolve(node, table) not in float_pads:
+            fails.append(f"{node} is off the board but IS connected")
 
     for node in N.NO_CONNECT:
         rp = N.resolve(node, table)
@@ -130,6 +171,7 @@ def main():
                          f"{owner[rp]}")
 
     check_footprints(fails)
+    check_polarity(fails)
 
     print(f"source : {len(want)} nets, {sum(len(v) for v in want.values())} pads")
     print(f"schema : {len(real)} nets, {len(float_pads)} floating pads")

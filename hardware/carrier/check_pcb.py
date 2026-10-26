@@ -1,93 +1,82 @@
-#!/usr/bin/env python3
-"""Check the placement in carrier.kicad_pcb.
+#!/usr/bin/python3
+"""Check the board's mechanical intent -- things KiCad's DRC cannot know.
 
-KiCad 7's CLI has no DRC, so this covers what placement can be checked
-without one:
+DRC (drc.py) owns clearances, courtyard overlaps, holes and connectivity.
+This checks the decisions behind the layout, read from the board KiCad
+actually built:
 
-  1. every part's courtyard lies inside the board outline
-  2. no two courtyards overlap
-  3. the two exposed USB-C ports land on the front edge (y = 0), because
-     that edge is the enclosure's port wall
-  4. no part sits on a mounting hole
-  5. nothing intrudes into the antenna keep-out
-  5. every part in netlist.py is actually placed
-
-It does NOT check track clearance, because there are no tracks: routing is
-done in the PCB editor with live DRC.
+  1. both exposed USB-C ports sit exactly on the front edge (the port wall)
+  2. the ESP32's USB-C end overhangs the left edge, so a flashing cable's
+     overmold hangs in free air (AUDIT.md #9)
+  3. the ESP32's antenna end overhangs the notch by at least 6 mm, with no
+     carrier under it (AUDIT.md #6)
+  4. every mounting hole leaves at least 1.5 mm of FR4 to the edge
+     (AUDIT.md #11 -- the old rear holes left 0.5 mm)
 """
-import pathlib, re, sys
-import netlist as N
-import gen_pcb as G
+import pathlib, sys
+import pcbnew
 
 HERE = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import gen_pcb as G
 
-def overlap(a, b, slack=0.0):
-    return (a[0] < b[2] - slack and b[0] < a[2] - slack and
-            a[1] < b[3] - slack and b[1] < a[3] - slack)
+MM = pcbnew.ToMM
+
+def module_box(fp):
+    """Module outline from its F.Fab drawing, which gen_fp draws at the real
+    board edges."""
+    xs, ys = [], []
+    for g in fp.GraphicalItems():
+        if g.GetLayer() == pcbnew.F_Fab and g.GetClass() in ("MGRAPHIC", "FP_SHAPE", "PCB_SHAPE"):
+            for p in (g.GetStart(), g.GetEnd()):
+                xs.append(MM(p.x)); ys.append(MM(p.y))
+    return min(xs), min(ys), max(xs), max(ys)
 
 def main():
-    fails, boxes = [], {}
+    b = pcbnew.LoadBoard(str(HERE / "carrier.kicad_pcb"))
+    fp = {f.GetReference(): f for f in b.GetFootprints()}
+    fails = []
 
-    missing = set(N.PARTS) - set(G.PLACE)
-    if missing:
-        fails.append(f"not placed: {sorted(missing)}")
-
-    pads = {}
-    for ref in G.PLACE:
-        fp = N.FOOTPRINTS[ref]
-        if G.courtyard(fp) is None:
-            fails.append(f"{ref}: footprint has no courtyard")
-            continue
-        boxes[ref], pads[ref] = G.boxes_for(ref, fp)
-
-    # Containment is judged on PADS, not courtyards: a courtyard is a
-    # clearance envelope and is meant to run off the edge where a module sits
-    # flush with it, as both RP boards deliberately do.
-    for ref, bb in pads.items():
-        if not (0 <= bb[0] and 0 <= bb[1] and bb[2] <= G.W and bb[3] <= G.H):
-            fails.append(f"{ref}: pads {tuple(round(v,2) for v in bb)} "
-                         f"outside the 0,0-{G.W},{G.H} outline")
-
-    refs = sorted(boxes)
-    for i, a in enumerate(refs):
-        for b in refs[i + 1:]:
-            if overlap(boxes[a], boxes[b]):
-                fails.append(f"{a} and {b} courtyards overlap: "
-                             f"{tuple(round(v,2) for v in boxes[a])} vs "
-                             f"{tuple(round(v,2) for v in boxes[b])}")
-
-    # the exposed port must sit ON the front edge, or it will not reach the wall
     for ref in ("U1", "U2"):
-        x, y, rot = G.origin(ref, N.FOOTPRINTS[ref])
-        front = y - G.B["board_l"] / 2          # module outline, exposed end
-        if abs(front) > 0.01:
-            fails.append(f"{ref}: exposed port edge at y={front:.2f}, not 0")
+        y = MM(fp[ref].GetPosition().y) - G.B["board_l"] / 2
+        print(f"{ref} exposed-port edge at y = {y:+.3f}")
+        if abs(y) > 0.01:
+            fails.append(f"{ref}: exposed port edge at y={y:.3f}, not on the front edge")
 
-    # Mounting holes are plain Edge.Cuts circles with no courtyard of their
-    # own, so they were invisible to the overlap test above. The first render
-    # showed both front holes drilled through D1 and D2.
-    ring = G.MOUNT_D / 2 + 0.5
-    for i, (hx, hy) in enumerate(G.MOUNT):
-        hb = (hx - ring, hy - ring, hx + ring, hy + ring)
-        for ref, bb in boxes.items():
-            if overlap(bb, hb):
-                fails.append(f"mounting hole {i+1} at ({hx},{hy}) collides with {ref}")
+    x0, y0, x1, y1 = module_box(fp["U3"])
+    usb = -x0
+    ant = x1 - G.X_NOTCH
+    print(f"U3 USB-C end overhangs the left edge by {usb:.2f} mm")
+    print(f"U3 antenna end overhangs the notch by {ant:.2f} mm "
+          f"(module front edge y {y0:.2f}, notch starts y {G.Y_STEP})")
+    if usb < 0.5:
+        fails.append(f"U3 USB-C end overhangs only {usb:.2f} mm (want >= 0.5)")
+    if ant < 6.0:
+        fails.append(f"U3 antenna overhang {ant:.2f} mm (want >= 6)")
+    if y0 <= G.Y_STEP:
+        fails.append("carrier extends under the antenna end: the notch starts behind the module")
 
-    ant = (G.W - 10.0, 39.0, G.W, 67.0)
-    for ref, bb in boxes.items():
-        if ref != "U3" and overlap(bb, ant, 0.001):
-            fails.append(f"{ref} intrudes into the antenna keep-out")
+    edges = list(zip(G.OUTLINE, G.OUTLINE[1:] + G.OUTLINE[:1]))
+    def dist(px, py, a, c):
+        (ax, ay), (cx, cy) = a, c
+        vx, vy = cx - ax, cy - ay
+        t = max(0.0, min(1.0, ((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy)))
+        return ((px - ax - t * vx) ** 2 + (py - ay - t * vy) ** 2) ** 0.5
+    for i in range(1, 5):
+        h = fp[f"H{i}"]
+        x, y = MM(h.GetPosition().x), MM(h.GetPosition().y)
+        r = MM(list(h.Pads())[0].GetDrillSize().x) / 2
+        web = min(dist(x, y, a, c) for a, c in edges) - r
+        print(f"H{i} at ({x:.1f},{y:.1f}): {web:.2f} mm of FR4 to the edge")
+        if web < 1.5:
+            fails.append(f"H{i}: only {web:.2f} mm to the edge (want >= 1.5)")
 
-    print(f"board  : {G.W} x {G.H} mm")
-    print(f"placed : {len(boxes)} parts")
-    used = sum((b[2]-b[0]) * (b[3]-b[1]) for b in boxes.values())
-    print(f"courtyard area: {used:.0f} mm2 of {G.W*G.H:.0f} mm2 ({100*used/(G.W*G.H):.0f}%)")
     if fails:
         print("\nFAIL")
         for f in fails:
             print("  -", f)
         sys.exit(1)
-    print("\nOK: all courtyards inside the outline, none overlapping, ports on the edge")
+    print("\nOK: ports on the edge, ESP32 overhangs both ends, holes have proper webs")
 
 if __name__ == "__main__":
     main()

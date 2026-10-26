@@ -1,2 +1,6 @@
 carrier.xml
 __pycache__/
+# KiCad per-user UI state (window layout, open layers)
+*.kicad_prl
+*-backups/
+fp-info-cache

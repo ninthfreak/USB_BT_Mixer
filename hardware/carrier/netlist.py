@@ -27,7 +27,7 @@ ESP_J4 = ["GND", "IO23", "IO22", "TX0", "RX0", "IO21", "GND", "IO19", "IO18",
           "IO5", "IO17", "IO16", "IO4", "IO0", "IO2", "IO15", "SD1", "SD0", "CLK"]
 
 # ── Parts ────────────────────────────────────────────────────────────────
-# kind: "module" | "r" | "c" | "cpol" | "d" | "hdr" | "tp" | "sj"
+# kind: "module" | "r" | "c" | "cpol" | "d" | "hdr" | "tp"
 PARTS = {
     "U1": dict(kind="module", value="RP2350-USB-C", desc="Input 1",
                left=RP_LEFT, right=RP_RIGHT),
@@ -39,10 +39,22 @@ PARTS = {
     "D1": dict(kind="d", value="1N5817", desc="Input 1 supply isolation"),
     "D2": dict(kind="d", value="1N5817", desc="Input 2 supply isolation"),
 
-    "R1": dict(kind="r", value="33R", desc="BCLK series, to input 1"),
-    "R2": dict(kind="r", value="33R", desc="BCLK series, to input 2"),
-    "R3": dict(kind="r", value="33R", desc="LRCK series, to input 1"),
-    "R4": dict(kind="r", value="33R", desc="LRCK series, to input 2"),
+    # 1k, not 33R. With one host connected the other input board is
+    # unpowered, and the ESP32 keeps driving clocks into it; these limit the
+    # current through its protection diodes to ~3 mA (AUDIT.md #3). At 2.8 MHz
+    # into ~10 pF they still give ~22 ns edges against a 177 ns half-period.
+    "R1": dict(kind="r", value="1k", desc="BCLK series to input 1; limits back-feed"),
+    "R2": dict(kind="r", value="1k", desc="BCLK series to input 2; limits back-feed"),
+    "R3": dict(kind="r", value="1k", desc="LRCK series to input 1; limits back-feed"),
+    "R4": dict(kind="r", value="1k", desc="LRCK series to input 2; limits back-feed"),
+    "R5": dict(kind="r", value="1k", desc="UART TX series to input 1; limits back-feed"),
+    "R6": dict(kind="r", value="1k", desc="UART TX series to input 2; limits back-feed"),
+    "R7": dict(kind="r", value="100k", desc="AUD1 pull-down: GPIO35 has no internal pull"),
+    # 4.7k rather than a solder bridge: a bridge is a dead short if firmware
+    # ever drives GP29 high. 4.7k holds it firmly low against the RP2350-E9
+    # input leakage (up to ~120 uA, 0.56 V). Leave unfitted to free the pin.
+    "R8": dict(kind="r", value="4k7", desc="Input 1 GP29 pull-down; omit to free the pin"),
+    "R9": dict(kind="r", value="4k7", desc="Input 2 GP29 pull-down; omit to free the pin"),
 
     "C1": dict(kind="cpol", value="22uF", desc="Rail bulk, at the ESP32"),
     "C2": dict(kind="c", value="100nF", desc="Rail bypass, at the ESP32"),
@@ -53,8 +65,6 @@ PARTS = {
                pins=["GND", "DBG1", "DBG2", "SP1", "SP2", "SP3"]),
     "TP1": dict(kind="tp", value="RAIL", desc="Rail test point -- MEASURE here"),
     "TP2": dict(kind="tp", value="GND", desc="Ground test point"),
-    "SJ1": dict(kind="sj", value="closed", desc="Input 1 GP29 to GND, cut to free"),
-    "SJ2": dict(kind="sj", value="closed", desc="Input 2 GP29 to GND, cut to free"),
 }
 
 # ── Nets ─────────────────────────────────────────────────────────────────
@@ -65,45 +75,55 @@ NETS = {
     "VBUS1": ["U1.5V", "D1.A", "C3.1"],
     "VBUS2": ["U2.5V", "D2.A", "C4.1"],
     "RAIL":  ["D1.K", "D2.K", "U3.5V", "C1.+", "C2.1", "TP1.1"],
-    "GND":   ["U1.GND", "U2.GND", "U3.GND", "U3.#20", "U3.#26",
-              "C1.-", "C2.2", "C3.2", "C4.2",
-              "SJ1.2", "SJ2.2", "J1.GND", "TP2.1"],
+    # U3 pad 20 (a third GND) is off the board under the antenna overhang;
+    # pads 14 and 26 carry the ESP32's ground.
+    "GND":   ["U1.GND", "U2.GND", "U3.GND", "U3.#26",
+              "C1.-", "C2.2", "C3.2", "C4.2", "R7.2", "R8.2", "R9.2",
+              "J1.GND", "TP2.1"],
 
-    # GP29 is the unused chain input. Grounded through a solder bridge so a
-    # second input board or an ADC can take it later without cutting a trace.
-    "GP29_1": ["U1.GP29", "SJ1.1"],
-    "GP29_2": ["U2.GP29", "SJ2.1"],
+    # GP29 is the unused chain input, held low until something uses it.
+    "GP29_1": ["U1.GP29", "R8.1"],
+    "GP29_2": ["U2.GP29", "R9.1"],
 
     # I2S. The ESP32 is clock master on both; the loop-backs must tap the pin
-    # DIRECTLY, on the ESP32 side of the series resistors.
-    "BCLK":  ["U3.IO25", "U3.IO36", "R1.1", "R2.1"],
+    # DIRECTLY, on the ESP32 side of the series resistors. They use IO13 and
+    # IO32, not IO36/IO39, which glitch low for ~80 ns whenever the SAR ADC
+    # powers up -- reported as tracking A2DP streaming (AUDIT.md #4).
+    "BCLK":  ["U3.IO25", "U3.IO13", "R1.1", "R2.1"],
     "BCLK1": ["R1.2", "U1.GP26"],
     "BCLK2": ["R2.2", "U2.GP26"],
-    "LRCK":  ["U3.IO33", "U3.IO39", "R3.1", "R4.1"],
+    "LRCK":  ["U3.IO33", "U3.IO32", "R3.1", "R4.1"],
     "LRCK1": ["R3.2", "U1.GP27"],
     "LRCK2": ["R4.2", "U2.GP27"],
-    "AUD1":  ["U1.GP28", "U3.IO35"],
+    "AUD1":  ["U1.GP28", "U3.IO35", "R7.1"],
     "AUD2":  ["U2.GP28", "U3.IO26"],
 
-    # UART, one pair per input board. Every net joins a TX to an RX.
-    "U1_TX": ["U1.GP4", "U3.IO16"],
-    "U1_RX": ["U1.GP5", "U3.IO17"],
-    "U2_TX": ["U2.GP4", "U3.IO18"],
-    "U2_RX": ["U2.GP5", "U3.IO19"],
+    # UART, one pair per input board. Every net joins a TX to an RX. The
+    # ESP32's TX reaches each board through 1k for the same back-feed reason
+    # as the clocks; the boards' TX lines drive the always-powered ESP32.
+    "U1_TX":   ["U1.GP4", "U3.IO16"],
+    "ESP_TX1": ["U3.IO17", "R5.1"],
+    "U1_RX":   ["R5.2", "U1.GP5"],
+    "U2_TX":   ["U2.GP4", "U3.IO18"],
+    "ESP_TX2": ["U3.IO19", "R6.1"],
+    "U2_RX":   ["R6.2", "U2.GP5"],
 
     # Breakout: PIO debug serial from each input board, three spare ESP32 pins.
     "DBG1": ["U1.GP3", "J1.DBG1"],
     "DBG2": ["U2.GP3", "J1.DBG2"],
-    "SP1":  ["U3.IO32", "J1.SP1"],
+    "SP1":  ["U3.IO4", "J1.SP1"],
     "SP2":  ["U3.IO21", "J1.SP2"],
-    "SP3":  ["U3.IO22", "J1.SP3"],
+    # IO14 is a JTAG pin and some sources say it emits PWM at boot; harmless
+    # on a breakout pin, worth knowing before using it.
+    "SP3":  ["U3.IO14", "J1.SP3"],
 }
 
 # Deliberately NOT connected, with the reason. Asserted by check_netlist.py.
 NO_CONNECT = {
     "U1.3V3": "Each board has its own regulator. Never tie the 3V3 rails.",
     "U2.3V3": "Each board has its own regulator. Never tie the 3V3 rails.",
-    "U3.3V3": "ESP32 regulator output. Nothing on this board runs from it.",
+    "U3.IO36": "Erratum: pulled low ~80 ns when the SAR ADC powers up. Was the BCLK loop-back.",
+    "U3.IO39": "Erratum: pulled low ~80 ns when the SAR ADC powers up. Was the LRCK loop-back.",
     "U3.IO34": "Battery-sense divider through R28 on the ESP32 board.",
     "U3.IO27": "Drives the ESP32 board's RGB LED through R1.",
     "U3.IO12": "Strapping pin (MTDI).",
@@ -113,10 +133,20 @@ NO_CONNECT = {
     "U3.IO5":  "Strapping pin.",
     "U3.TX0":  "Console UART to the CH343P. Keep free for logs and flashing.",
     "U3.RX0":  "Console UART to the CH343P. Keep free for logs and flashing.",
-    "U3.EN":   "Chip enable, pulled up on the ESP32 board. Leave it alone.",
     "U3.SD0":  "Module flash.", "U3.SD1": "Module flash.",
     "U3.SD2":  "Module flash.", "U3.SD3": "Module flash.",
     "U3.CMD":  "Module flash.", "U3.CLK": "Module flash.",
+}
+
+# ESP32 pads with NO land on the carrier. The antenna end of the ESP32
+# overhangs the carrier edge, which is Espressif's preferred arrangement, and
+# these four sit on that overhang (AUDIT.md #6). None is needed: EN and IO23
+# were unused, 3V3 is never connected, and GND has two other pads.
+OFF_BOARD = {
+    "U3.3V3": "On the antenna overhang.",
+    "U3.EN":  "On the antenna overhang.",
+    "U3.#20": "On the antenna overhang (a third GND; pads 14 and 26 remain).",
+    "U3.IO23": "On the antenna overhang.",
 }
 
 # Spare pads: nothing wrong with them, this design just has no use for them.
@@ -124,36 +154,26 @@ NO_CONNECT = {
 UNUSED = {f"{u}.{p}": "Spare GPIO"
           for u in ("U1", "U2")
           for p in ("GP0", "GP1", "GP2", "GP6", "GP7", "GP8", "GP9", "GP10")}
-UNUSED.update({
-    "U3.IO14": "Spare GPIO", "U3.IO13": "Spare GPIO",
-    "U3.IO23": "Spare GPIO", "U3.IO4":  "Spare GPIO",
-})
+UNUSED.update({"U3.IO22": "Spare GPIO"})
 
 # Footprints. The two modules are generated by gen_fp.py into carrier.pretty/;
 # everything else is a stock KiCad 7 library part. Axial parts use P7.62 since
 # leads bend to suit; the disc caps use P5.08 because splaying a 2.54 mm part
 # out is easy while squeezing a 5.08 mm one in is not.
+_R = "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
+_C = "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm"
 FOOTPRINTS = {
     "U1": "carrier:RP2350-USB-C",
     "U2": "carrier:RP2350-USB-C",
     "U3": "carrier:ESP32-DEV-KIT",
     "D1": "Diode_THT:D_DO-41_SOD81_P7.62mm_Horizontal",
     "D2": "Diode_THT:D_DO-41_SOD81_P7.62mm_Horizontal",
-    "R1": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
-    "R2": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
-    "R3": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
-    "R4": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal",
+    **{f"R{i}": _R for i in range(1, 10)},
     "C1": "Capacitor_THT:CP_Radial_D5.0mm_P2.50mm",
-    "C2": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm",
-    "C3": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm",
-    "C4": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm",
+    "C2": _C, "C3": _C, "C4": _C,
     "J1": "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical",
     "TP1": "TestPoint:TestPoint_Pad_D1.5mm",
     "TP2": "TestPoint:TestPoint_Pad_D1.5mm",
-    # Bridged, not Open: GP29 is grounded by default and the bridge is CUT to
-    # free the pin for a third input or an ADC.
-    "SJ1": "Jumper:SolderJumper-2_P1.3mm_Bridged_Pad1.0x1.5mm",
-    "SJ2": "Jumper:SolderJumper-2_P1.3mm_Bridged_Pad1.0x1.5mm",
 }
 
 # Pads to solder for MECHANICAL reasons only -- they carry no net. The owner
@@ -167,7 +187,8 @@ SOLDER_MECHANICAL = {
     "U1.GP8":  "far corner, right column",
     "U2.GP9":  "far corner, left column", "U2.GP0": "near corner, right column",
     "U2.GP8":  "far corner, right column",
-    "U3.3V3":  "corner, antenna end of J3",
+    "U3.IO36": "last pad on the carrier, antenna end of J3",
+    "U3.IO22": "last pad on the carrier, antenna end of J4",
     "U3.CLK":  "corner, USB-C end of J4",
 }
 
@@ -175,9 +196,11 @@ PASSIVE_PINS = {   # ref -> {pin name: pad number}
     "r":    {"1": 1, "2": 2},
     "c":    {"1": 1, "2": 2},
     "cpol": {"+": 1, "-": 2},
-    "d":    {"A": 1, "K": 2},
+    # Pin 1 is the CATHODE. KiCad's diode footprints put the band and the "K"
+    # on pad 1; this once said A=1, which reversed both Schottkys on the board
+    # and would have left the rail unpowered (AUDIT.md #1).
+    "d":    {"K": 1, "A": 2},
     "tp":   {"1": 1},
-    "sj":   {"1": 1, "2": 2},
 }
 
 

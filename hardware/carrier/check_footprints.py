@@ -61,15 +61,22 @@ def main():
     e = pads("ESP32-DEV-KIT")
     ew, ed = B["esp_w"] / 2, B["esp_d"] / 2
     n2, span = 19, 18 * 2.54
-    if len(e) != 2 * n2:
-        fails.append(f"ESP32: {len(e)} pads, expected {2*n2}")
+    import netlist as N
+    omit = {N.resolve(n, N.pin_table())[1] for n in N.OFF_BOARD if n.startswith("U3.")}
+    if len(e) != 2 * n2 - len(omit):
+        fails.append(f"ESP32: {len(e)} pads, expected {2*n2 - len(omit)}")
+    for num in omit:
+        if num in e:
+            fails.append(f"ESP32 pad {num} is listed as off-board but has a land")
     for i in range(n2):
         x = -span / 2 + i * 2.54
         for num, y in ((i + 1, ed - off), (n2 + i + 1, -ed + off)):
+            if num in omit:
+                continue
             gx, gy = e.get(num, (None, None))
             if gx is None or not (near(gx, x) and near(gy, y)):
                 fails.append(f"ESP32 pad {num}: {(gx,gy)} != {(round(x,3),round(y,3))}")
-    if e and not near((ew - span / 2), 4.04):
+    if not near((ew - span / 2), 4.04):
         fails.append(f"ESP32 pin-1 inset {ew - span/2:.3f} != 4.04")
 
     # the courtyard must enclose everything on the fab layer, proud
@@ -89,7 +96,8 @@ def main():
         if not near(abs(cx0), abs(cx1)):
             fails.append(f"{name}: courtyard X not symmetric, {cx0} vs {cx1}")
     print(f"RP2350 : {len(p)} pads, span {abs(p[1][1]-p[n][1]):.2f} mm")
-    print(f"ESP32  : {len(e)} pads, span {abs(e[1][0]-e[n2][0]):.2f} mm")
+    xs = [v[0] for v in e.values()]
+    print(f"ESP32  : {len(e)} pads ({len(omit)} off-board), land span {max(xs)-min(xs):.2f} mm")
     if fails:
         print("\nFAIL")
         for f in fails:

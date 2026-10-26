@@ -77,8 +77,11 @@ def rp2350():
             "+Y is the PROGRAMMING (proud) port end; -Y is the EXPOSED port "
             "that must meet the enclosure wall.",
             "waveshare rp2350 castellated module")
-    o.append(text("reference", "REF**", 0, -hl - 1.6, SILK))
-    o.append(text("value", "RP2350-USB-C", 0, hl + 1.6, FAB))
+    # Refdes sits inside the outline: the exposed-port end is flush with the
+    # carrier edge, so anything outside it at -Y is off the board. It is
+    # hidden once the module is fitted, which is fine -- it guides assembly.
+    o.append(text("reference", "REF**", 0, 3.0, SILK))
+    o.append(text("value", "RP2350-USB-C", 0, -3.0, FAB))
 
     # pads: 1..9 left edge from the programming end, 10..18 right edge
     y0 = hl - first
@@ -100,12 +103,14 @@ def rp2350():
     o += rect(-uw, hl + B["usb_over_in"], uw, hl + B["usb_over_in"] - ud, FAB)
 
     # silk: short ticks clear of the pads, plus a pin-1 dot
+    # No silkscreen along the exposed-port edge: it lies on the board edge.
     for sx in (-1, 1):
         o.append(line(sx * hw, hl, sx * hw, y0 + 1.2, SILK))
-        o.append(line(sx * hw, -hl, sx * hw, ny1 - 0.3, SILK))
+        o.append(line(sx * hw, -hl + 0.6, sx * hw, ny1 - 0.3, SILK))
     o.append(line(-hw, hl, hw, hl, SILK))
-    o.append(line(-hw, -hl, hw, -hl, SILK))
-    o.append(circle(-hw - PAD_OUT - 0.7, y0, 0.25, SILK))
+    # pin-1 dot inside the outline beside pad 1: outside it, it landed on
+    # whatever part sat next to the module
+    o.append(circle(-hw + 0.9, hl - 1.0, 0.25, SILK))
     o += rect(-hw - PAD_OUT - 0.5, -hl - B["usb_over_out"] - 0.25,
               hw + PAD_OUT + 0.5, hl + B["usb_over_in"] + 0.25, CRT, 0.05)
     o.append(")")
@@ -113,6 +118,11 @@ def rp2350():
 
 # ── ESP32-DEV-KIT ────────────────────────────────────────────────────────
 def esp32():
+    import netlist as N
+    t = N.pin_table()
+    # Pads with no land on the carrier (antenna overhang). The netlist owns
+    # that list; check_netlist.py asserts the footprint agrees with it.
+    omit = {N.resolve(n, t)[1] for n in N.OFF_BOARD if n.startswith("U3.")}
     w, d = B["esp_w"], B["esp_d"]
     hw, hd = w / 2, d / 2
     n, pitch = 19, 2.54
@@ -125,19 +135,20 @@ def esp32():
             "Pads 1-19 are header J3 (+Y), pads 20-38 are J4 (-Y). "
             "ANTENNA at -X: keep copper away.",
             "waveshare esp32 wroom castellated module")
-    o.append(text("reference", "REF**", 0, -hd - 1.6, SILK))
-    o.append(text("value", "ESP32-DEV-KIT", 0, hd + 1.6, FAB))
+    o.append(text("reference", "REF**", 0, 0, SILK))
+    o.append(text("value", "ESP32-DEV-KIT", 0, -4.0, FAB))
 
     for i in range(n):
         x = x0 + i * pitch
-        o.append(pad(i + 1, x, hd - PAD_IN_OFF, PAD_W, PAD_L))        # J3
-        o.append(pad(n + i + 1, x, -hd + PAD_IN_OFF, PAD_W, PAD_L))   # J4
+        if i + 1 not in omit:
+            o.append(pad(i + 1, x, hd - PAD_IN_OFF, PAD_W, PAD_L))        # J3
+        if n + i + 1 not in omit:
+            o.append(pad(n + i + 1, x, -hd + PAD_IN_OFF, PAD_W, PAD_L))   # J4
 
     o += rect(-hw, -hd, hw, hd, FAB)
-    # optional clearance holes under the module's own mounting holes
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            o.append(npth(sx * B["esp_hole_dx"] / 2, sy * B["esp_hole_dy"] / 2, 3.0))
+    # No holes under the module's own mounting holes. They were optional,
+    # the carrier mounts by its own screws, and they sat ~0.01 mm from four
+    # corner pads (AUDIT.md #5).
     # USB-C at +X, antenna at -X
     uw = B["esp_usb_w"] / 2
     o += rect(hw - 7.5, -uw, hw, uw, FAB)
@@ -145,12 +156,11 @@ def esp32():
     # antenna keep-out reminder on fab
     o += rect(-hw, -hd, -hw + 8, hd, FAB)
 
-    o.append(line(-hw, hd, hw, hd, SILK))
-    o.append(line(-hw, -hd, hw, -hd, SILK))
-    for sy in (-1, 1):
-        o.append(line(-hw, sy * hd, -hw, sy * (hd - 2), SILK))
-        o.append(line(hw, sy * hd, hw, sy * (hd - 2), SILK))
-    o.append(circle(x0, hd + PAD_OUT + 0.7, 0.25, SILK))
+    # No silkscreen outline: the long edges run through the pads and both
+    # short ends overhang the carrier. One orientation dot, beside the first
+    # J3 pad that has a land.
+    first = min(i for i in range(1, n + 1) if i not in omit)
+    o.append(circle(x0 + (first - 1) * pitch, hd + PAD_OUT + 0.7, 0.25, SILK))
     o += rect(-hw - 0.25, -hd - PAD_OUT - 0.5, hw + 0.25, hd + PAD_OUT + 0.5,
               CRT, 0.05)
     o.append(")")

@@ -1,67 +1,106 @@
 #!/usr/bin/python3
-"""Run KiCad's own DRC on carrier.kicad_pcb.
+"""KiCad's own DRC on carrier.kicad_pcb -- the gate for this board.
 
 Must run under the SYSTEM python (/usr/bin/python3), which carries KiCad 7's
 pcbnew bindings. kicad-cli in KiCad 7 has no DRC subcommand, but
-pcbnew.WriteDRCReport has existed since 7.0 -- for a long time this project
-claimed no DRC was available because only the CLI had been checked.
+pcbnew.WriteDRCReport has existed since 7.0; for a long time this project
+said no DRC was available because only the CLI had been checked.
 
-gen_pcb.py does not yet write nets onto pads, and an un-netted pad touching a
-netted track reads as a short. So this works on a temporary copy with pad nets
-assigned from netlist.py, exactly as "Update PCB from Schematic" would. The
-repository board is not modified.
+Two things happen here that KiCad's DRC cannot do by itself:
 
-lib_footprint_issues is reported but not counted: it means the footprints
-carry no library link and this container has no global library table, which
-says nothing about the copper.
+1. Every pad's net is compared with netlist.py. The board is checked AS
+   GENERATED -- nothing is patched onto it first -- so a generator that drops
+   nets fails here instead of being papered over.
+2. The design rules are set to this board's own, which are stricter than
+   KiCad's defaults: 0.25 mm clearance, 0.5 mm copper to edge, 0.5 mm between
+   drilled holes (most fabs want that between plated holes).
+
+    /usr/bin/python3 drc.py              # routed board: everything must pass
+    /usr/bin/python3 drc.py --unrouted   # placement stage: ignore missing tracks
 """
-import collections, pathlib, re, shutil, sys, tempfile
+import collections, pathlib, re, sys, tempfile
 import pcbnew
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import netlist as N
 
-IGNORE = {"lib_footprint_issues"}
+mm = pcbnew.FromMM
+RULES = dict(clearance=0.25, track=0.40, via=0.80, drill=0.40,
+             edge=0.50, hole_clear=0.25, hole_to_hole=0.50)
+
+# Library linkage: footprints name stock libraries this container has no
+# global table for. Says nothing about the copper.
+ENV_ONLY = re.compile(r"does not include the library")
+UNROUTED_OK = {"unconnected_items", "track_dangling"}
+
+def check_nets(board):
+    want = {(r, str(p)): n for n, nodes in N.resolved_nets().items() for r, p in nodes}
+    bad, seen = [], set()
+    for fp in board.GetFootprints():
+        ref = fp.GetReference()
+        if ref not in N.PARTS:
+            continue
+        for p in fp.Pads():
+            key = (ref, p.GetNumber())
+            got = p.GetNetname() or None
+            exp = want.get(key)
+            seen.add(key)
+            if got != exp:
+                bad.append(f"{ref}.{p.GetNumber()}: board has {got!r}, netlist says {exp!r}")
+    for key in want:
+        if key not in seen:
+            bad.append(f"{key[0]}.{key[1]}: in the netlist but not on the board")
+    return bad
+
+def apply_rules(board):
+    ds = board.GetDesignSettings()
+    nc = ds.m_NetSettings.m_DefaultNetClass
+    nc.SetClearance(mm(RULES["clearance"]))
+    nc.SetTrackWidth(mm(RULES["track"]))
+    nc.SetViaDiameter(mm(RULES["via"]))
+    nc.SetViaDrill(mm(RULES["drill"]))
+    ds.m_CopperEdgeClearance = mm(RULES["edge"])
+    ds.m_HoleClearance = mm(RULES["hole_clear"])
+    ds.m_HoleToHoleMin = mm(RULES["hole_to_hole"])
 
 def main():
-    tmp = pathlib.Path(tempfile.mkdtemp())
-    shutil.copy(HERE / "carrier.kicad_pcb", tmp / "b.kicad_pcb")
-    b = pcbnew.LoadBoard(str(tmp / "b.kicad_pcb"))
+    unrouted = "--unrouted" in sys.argv
+    board = pcbnew.LoadBoard(str(HERE / "carrier.kicad_pcb"))
 
-    nets = N.resolved_nets()
-    info = {}
-    for name in nets:
-        ni = b.FindNet(name)
-        if ni is None:
-            ni = pcbnew.NETINFO_ITEM(b, name); b.Add(ni)
-        info[name] = ni
-    padnet = {(r, str(p)): n for n, nodes in nets.items() for r, p in nodes}
-    for fp in b.GetFootprints():
-        for p in fp.Pads():
-            n = padnet.get((fp.GetReference(), p.GetNumber()))
-            if n:
-                p.SetNet(info[n])
-    b.BuildConnectivity()
+    net_errors = check_nets(board)
+    apply_rules(board)
+    board.BuildConnectivity()
 
-    rpt = tmp / "drc.rpt"
-    pcbnew.WriteDRCReport(b, str(rpt), pcbnew.EDA_UNITS_MILLIMETRES, True)
+    rpt = pathlib.Path(tempfile.mkdtemp()) / "drc.rpt"
+    pcbnew.WriteDRCReport(board, str(rpt), pcbnew.EDA_UNITS_MILLIMETRES, True)
     txt = rpt.read_text()
-    blocks = [x for x in re.split(r'\n(?=\[)', txt) if x.startswith('[')]
-    kinds = collections.Counter(re.match(r'\[(\w+)\]', x).group(1) for x in blocks)
-    real = {k: v for k, v in kinds.items() if k not in IGNORE}
-    errors = sum(v for k, v in real.items()
-                 if any(f"[{k}]" in x and "Severity: error" in x for x in blocks))
+    (HERE / "drc-report.txt").write_text(txt)
 
-    print(f"KiCad {pcbnew.Version()} DRC, pad nets assigned from netlist.py")
-    for k, v in sorted(kinds.items(), key=lambda kv: -kv[1]):
-        print(f"  {v:4}  {k}" + ("   (library linkage, ignored)" if k in IGNORE else ""))
-    shutil.copy(rpt, HERE / "drc-report.txt")
-    print(f"\nfull report: drc-report.txt")
-    if real:
-        print(f"FAIL: {sum(real.values())} findings")
+    blocks = [x for x in re.split(r"\n(?=\[)", txt) if x.startswith("[")]
+    counted, skipped = collections.Counter(), collections.Counter()
+    for x in blocks:
+        kind = re.match(r"\[(\w+)\]", x).group(1)
+        if ENV_ONLY.search(x) or (unrouted and kind in UNROUTED_OK):
+            skipped[kind] += 1
+        else:
+            counted[kind] += 1
+
+    stage = "placement (unrouted)" if unrouted else "routed"
+    print(f"KiCad {pcbnew.Version()} DRC, {stage}, rules {RULES}")
+    print(f"pad nets vs netlist.py: {'OK' if not net_errors else f'{len(net_errors)} wrong'}")
+    for e in net_errors[:10]:
+        print("  -", e)
+    for k, v in counted.most_common():
+        print(f"  {v:4}  {k}")
+    for k, v in skipped.most_common():
+        print(f"  {v:4}  {k}  (not counted: {'stage' if k in UNROUTED_OK else 'library linkage'})")
+    print("full report: drc-report.txt")
+
+    if net_errors or counted:
+        print(f"\nFAIL: {len(net_errors)} net errors, {sum(counted.values())} DRC findings")
         sys.exit(1)
-    print("OK: KiCad DRC is clean")
+    print("\nOK: KiCad DRC is clean and every pad carries its netlist net")
 
 if __name__ == "__main__":
     main()

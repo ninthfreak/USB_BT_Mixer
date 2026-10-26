@@ -1,5 +1,11 @@
 # Carrier board
 
+> **⚠ DO NOT ORDER.** The 2026-10-26 audit found two errors that would stop
+> this board working — both diodes reversed on the footprint, and nine open
+> connections including input 2's path to the rail — plus several fab and
+> in-use faults. Claims below that the board is "verified clean" predate it.
+> See [`AUDIT.md`](AUDIT.md). KiCad's real DRC: `/usr/bin/python3 drc.py`.
+
 One flat PCB that the three modules solder onto, replacing the hand-wired
 loom. All ten passives live on it. Status: **schematic only, not laid out,
 not ordered.**

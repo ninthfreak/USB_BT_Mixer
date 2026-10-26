@@ -9,8 +9,10 @@ source. Checks, in order:
   2. the schematic has no nets beyond those (bar KiCad's unconnected-* stubs)
   3. every pad in NO_CONNECT really is unconnected
   4. no pad is left floating that isn't named in NO_CONNECT
+  5. every part carries a footprint, that footprint file exists, and its pad
+     numbers are exactly the symbol's pad numbers
 """
-import subprocess, sys, pathlib, xml.etree.ElementTree as ET
+import subprocess, sys, pathlib, re, xml.etree.ElementTree as ET
 import netlist as N
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -36,6 +38,37 @@ def from_schematic():
     for c in root.findall("./components/comp"):
         pads_in_sch.add(c.get("ref"))
     return nets, pads_in_sch
+
+LIBS = [pathlib.Path("/usr/share/kicad/footprints")]
+
+def footprint_file(fpid):
+    lib, name = fpid.split(":", 1)
+    local = HERE / f"{lib}.pretty" / f"{name}.kicad_mod"
+    if local.exists():
+        return local
+    for root in LIBS:
+        c = root / f"{lib}.pretty" / f"{name}.kicad_mod"
+        if c.exists():
+            return c
+    return None
+
+def check_footprints(fails):
+    pads = N.pad_names()
+    for ref in N.PARTS:
+        fpid = N.FOOTPRINTS.get(ref)
+        if not fpid:
+            fails.append(f"{ref}: no footprint assigned")
+            continue
+        f = footprint_file(fpid)
+        if f is None:
+            fails.append(f"{ref}: footprint {fpid} not found in any library")
+            continue
+        nums = set(re.findall(r'\(pad\s+"([^"]+)"', f.read_text()))
+        nums.discard("")                       # NPTH mounting holes
+        want = {str(n) for n in pads[ref]}
+        if nums != want:
+            fails.append(f"{ref}: {fpid} pads {sorted(nums)} != symbol pads "
+                         f"{sorted(want)}")
 
 def main():
     export()
@@ -82,6 +115,8 @@ def main():
         fails.append("floating pads declared nowhere: " +
                      "; ".join(f"{r}: {', '.join(v)}" for r, v in sorted(names.items())))
 
+    check_footprints(fails)
+
     print(f"source : {len(want)} nets, {sum(len(v) for v in want.values())} pads")
     print(f"schema : {len(real)} nets, {len(float_pads)} floating pads")
     if fails:
@@ -89,7 +124,7 @@ def main():
         for f in fails:
             print("  -", f)
         sys.exit(1)
-    print("\nOK: schematic matches netlist.py exactly")
+    print("OK: schematic matches netlist.py, and every footprint resolves")
 
 if __name__ == "__main__":
     main()

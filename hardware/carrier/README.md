@@ -19,11 +19,13 @@ below) does not affect the land pattern.
 
 | File | What |
 |---|---|
-| `netlist.py` | **Single source of truth.** Parts, pin maps, nets, and what is deliberately left unconnected |
-| `gen_sch.py` | Emits `carrier.kicad_sch` from it |
-| `gen_table.py` | Emits `CONNECTIONS.md` from it |
-| `check_netlist.py` | Reads the netlist back *out* of the schematic and diffs it against `netlist.py` |
-| `build.sh` | Runs all four and refreshes `carrier.pdf` |
+| `netlist.py` | **Single source of truth** for connectivity. Parts, pin maps, nets, footprint assignments, and what is deliberately left unconnected |
+| `gen_fp.py` | Emits the two module land patterns into `carrier.pretty/`, from `enclosure/boards.scad` |
+| `gen_sch.py` | Emits `carrier.kicad_sch` |
+| `gen_table.py` | Emits `CONNECTIONS.md` |
+| `check_netlist.py` | Reads the netlist back *out* of the schematic and diffs it against `netlist.py`; also resolves every footprint and checks its pad numbers |
+| `check_footprints.py` | Recomputes every pad coordinate from `boards.scad` and compares; checks each courtyard encloses its fab outline |
+| `build.sh` | Runs all of it and refreshes `carrier.pdf` |
 
 ```sh
 ./build.sh
@@ -85,11 +87,42 @@ The header row spacing (24.94 mm) comes from the same drawing as everything
 else and is taken as recorded. It does not enter an edge-soldered land pattern,
 which references the board outline; re-check it only if through-holes are added.
 
+## Land patterns
+
+Both modules solder flat, so the pads straddle the module's **board outline**:
+1.30 mm along the edge x 3.00 mm across, protruding 1.10 mm outside. The iron
+reaches every joint from outside; at 2.54 mm pitch the gap between pads is
+1.24 mm.
+
+Because the land references the outline and not the hole centres, the ESP32
+header row spacing never enters `gen_fp.py`.
+
+`carrier.pretty/` is generated. Nothing in it is hand-drawn, and `fp-lib-table`
+points KiCad at it. Stock KiCad 7 libraries supply the through-hole passives:
+axial parts at P7.62 (leads bend to suit), disc caps at P5.08 (splaying a
+2.54 mm part out is easy, squeezing a 5.08 mm one in is not), and the GP29
+jumpers are the **Bridged** variant, closed by default and cut to free the pin.
+
+Orientation, since KiCad draws +Y downward and it is easy to misread a render:
+
+| Footprint | +Y is |
+|---|---|
+| `RP2350-USB-C` | the **programming** port (the proud one). -Y is the exposed port that meets the enclosure wall |
+| `ESP32-DEV-KIT` | header **J3** (pads 1-19). -X is the antenna end: keep copper away |
+
+Both checks are proven to detect faults, not merely to pass:
+
+- nudge one RP2350 pad 0.1 mm -> `RP2350 pad 5: (-8.25, 3.46) != (-8.35, 3.46)`
+- point U3 at the wrong footprint -> pad sets differ, 18 vs 38
+- the courtyard check failed the pre-fix file, which did not enclose the
+  programming port's 1.0 mm overhang, and passes the corrected one
+
 ## Still open before layout
 
 | Item | State |
 |---|---|
-| Footprints | None drawn yet |
+| Underside of each module | **Unknown.** Both drawings are top views. A module with parts on the bottom cannot sit flat. A glance at the real boards settles it; no measurement needed |
+| ESP32 USB-C overhang | Drawn flush with the short edge. Does not affect the land pattern, only the board outline |
 | Board outline | Must follow `enclosure/boards.scad`; the exposed USB-C ports have to meet the port wall |
 | `ESP32-DEV-KIT-XX.pdf` | **Archive it.** The numbers are extracted, but the source should live in `docs/` so it survives. Not a blocker |
 

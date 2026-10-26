@@ -146,11 +146,13 @@ def main():
             off = 5
         out.append(f'    (property "Reference" "{ref}" (at {cx} {cy-off} 0) {FONT})')
         out.append(f'    (property "Value" "{part["value"]}" (at {cx} {cy+off} 0) {FONT})')
+        out.append(f'    (property "Footprint" "{N.FOOTPRINTS[ref]}" (at {cx} {cy} 0) '
+                   f'(effects (font (size 1.27 1.27)) hide))')
         for num in sorted(pads[ref]):
             out.append(f'    (pin "{num}" (uuid {uid(f"{ref}.{num}")}))')
         out.append('  )')
         inst.append(f'    (path "/{uid(ref)}" (reference "{ref}") (unit 1) '
-                    f'(value "{part["value"]}") (footprint ""))')
+                    f'(value "{part["value"]}") (footprint "{N.FOOTPRINTS[ref]}"))')
 
         # stubs + labels for connected pads
         for num in sorted(pads[ref]):

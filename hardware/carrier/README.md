@@ -22,9 +22,11 @@ below) does not affect the land pattern.
 | `netlist.py` | **Single source of truth** for connectivity. Parts, pin maps, nets, footprint assignments, and what is deliberately left unconnected |
 | `gen_fp.py` | Emits the two module land patterns into `carrier.pretty/`, from `enclosure/boards.scad` |
 | `gen_sch.py` | Emits `carrier.kicad_sch` |
+| `gen_pcb.py` | Emits `carrier.kicad_pcb`: outline and placement. **Unrouted** |
 | `gen_table.py` | Emits `CONNECTIONS.md` |
 | `check_netlist.py` | Reads the netlist back *out* of the schematic and diffs it against `netlist.py`; also resolves every footprint and checks its pad numbers |
-| `check_footprints.py` | Recomputes every pad coordinate from `boards.scad` and compares; checks each courtyard encloses its fab outline |
+| `check_footprints.py` | Recomputes every pad coordinate from `boards.scad`; checks each courtyard encloses its fab outline and is symmetric |
+| `check_pcb.py` | Courtyards inside the outline, none overlapping, no part on a mounting hole, exposed ports on the front edge |
 | `build.sh` | Runs all of it and refreshes `carrier.pdf` |
 
 ```sh
@@ -117,7 +119,41 @@ Both checks are proven to detect faults, not merely to pass:
 - the courtyard check failed the pre-fix file, which did not enclose the
   programming port's 1.0 mm overhang, and passes the corrected one
 
-## Still open before layout
+## Layout: placed, not routed
+
+`carrier.kicad_pcb` is **58 x 74 mm, 18 parts placed, no tracks**. Routing is
+deliberately left for the KiCad PCB editor, for two reasons:
+
+1. KiCad 7's `kicad-cli` has **no DRC subcommand** (it arrived in 8), so a
+   generated layout cannot be machine-checked for clearance here. Generating
+   tracks I cannot verify would be worse than generating none.
+2. This board has a 2.4 GHz antenna and clock traces. Routing quality is a
+   judgement call that wants eyes on the board and live DRC.
+
+Placement is by **courtyard centre**, not footprint origin: several stock
+footprints put their origin on pad 1, so a literal `(x, y)` meant something
+different for every part. `gen_pcb.origin()` solves for the origin and
+`check_pcb.py` reuses the same function, so the two cannot disagree.
+
+### What the checks caught
+
+| Found by | What |
+|---|---|
+| `check_pcb.py`, first run | ~20 real collisions in my first placement, including every part in the 6 mm service strip sitting inside the ESP32's courtyard |
+| the render | both front mounting holes drilled through D1 and D2 — invisible to the courtyard test, because holes are Edge.Cuts circles with no courtyard. The check now covers them |
+| `check_footprints.py` | an asymmetric courtyard left by a careless `sed`, 1.3 mm on one side and 0.5 on the other, which shifted placement by 0.4 mm |
+
+### Known tight spots
+
+- **82% of the board is courtyard.** It is dense.
+- **The gap between the two input boards is ~2.2 mm** of free copper. Input 2's
+  power and I2S pads face into it, because both modules face the same way.
+  Those nets will have to run *under* a module — legal, since both are flat
+  underneath — but routing may yet prove this placement needs another pass.
+- The service strip is 4.1 mm. Only parts under ~4 mm tall fit, which is why
+  the bulk cap C1 sits in the left column rather than beside the ESP32's 5V pad.
+
+## Still open
 
 | Item | State |
 |---|---|

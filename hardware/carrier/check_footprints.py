@@ -81,6 +81,13 @@ def main():
             fails.append(f"{name}: courtyard ({cx0},{cy0})-({cx1},{cy1}) does not "
                          f"enclose fab ({fx0},{fy0})-({fx1},{fy1})")
 
+    # A courtyard must be symmetric about the module it describes. A stray
+    # sed once left one 1.3 mm on one side and 0.5 on the other, which moved
+    # the placed part by 0.4 mm and nothing noticed.
+    for name in ("RP2350-USB-C", "ESP32-DEV-KIT"):
+        cx0, cy0, cx1, cy1 = extent(name, "F.CrtYd")
+        if not near(abs(cx0), abs(cx1)):
+            fails.append(f"{name}: courtyard X not symmetric, {cx0} vs {cx1}")
     print(f"RP2350 : {len(p)} pads, span {abs(p[1][1]-p[n][1]):.2f} mm")
     print(f"ESP32  : {len(e)} pads, span {abs(e[1][0]-e[n2][0]):.2f} mm")
     if fails:

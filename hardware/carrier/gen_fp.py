@@ -106,8 +106,8 @@ def rp2350():
     o.append(line(-hw, hl, hw, hl, SILK))
     o.append(line(-hw, -hl, hw, -hl, SILK))
     o.append(circle(-hw - PAD_OUT - 0.7, y0, 0.25, SILK))
-    o += rect(-hw - PAD_OUT - 1.3, -hl - B["usb_over_out"] - 0.25,
-              hw + PAD_OUT + 1.3, hl + B["usb_over_in"] + 0.25, CRT, 0.05)
+    o += rect(-hw - PAD_OUT - 0.5, -hl - B["usb_over_out"] - 0.25,
+              hw + PAD_OUT + 0.5, hl + B["usb_over_in"] + 0.25, CRT, 0.05)
     o.append(")")
     return "\n".join(o)
 
@@ -151,7 +151,7 @@ def esp32():
         o.append(line(-hw, sy * hd, -hw, sy * (hd - 2), SILK))
         o.append(line(hw, sy * hd, hw, sy * (hd - 2), SILK))
     o.append(circle(x0, hd + PAD_OUT + 0.7, 0.25, SILK))
-    o += rect(-hw - 0.25, -hd - PAD_OUT - 1.3, hw + 0.25, hd + PAD_OUT + 1.3,
+    o += rect(-hw - 0.25, -hd - PAD_OUT - 0.5, hw + 0.25, hd + PAD_OUT + 0.5,
               CRT, 0.05)
     o.append(")")
     return "\n".join(o)

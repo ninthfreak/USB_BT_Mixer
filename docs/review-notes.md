@@ -346,3 +346,30 @@ the same number disagreed:
 Outstanding: `ESP32-DEV-KIT-XX.pdf` is still not in the repo. The numbers are
 extracted into `wiring.md` and `boards.scad`, so nothing is blocked, but the
 source should be archived under `docs/` when convenient.
+
+## 23. Both modules are flat underneath
+
+Owner, boards in hand, 2026-10-26: **the RP2350-USB-C and the ESP32-DEV-KIT
+are completely flat on the bottom.** Neither Waveshare drawing shows this —
+both are top views — so it was guesswork until now.
+
+| Value | Was | Now |
+|---|---|---|
+| `esp_bot_h` | 0.50 assumed | **0.00**, measured |
+| `under_clear` | 1.5 "for underside parts" | 1.5 kept, but for a different reason |
+
+**What it unblocks.** Flat undersides are what make the carrier PCB possible
+at all: a module with parts on the bottom cannot sit flat, and edge-soldering
+a castellated module requires it to sit flat. No clearance cutouts are needed
+in the carrier, and copper may run under both modules.
+
+**What it leaves open.** `under_clear` no longer means what its name says.
+In the hand-wired build there is still a reason for a small gap — wires solder
+to the castellated pads and the fillets protrude below the board — but 1.5 mm
+is far more than fillets need. In a carrier build the reason disappears
+entirely.
+
+Dropping it to 0 shortens the enclosure by 1.5 mm, removes the cradle ledges
+(the board would sit on the floor), and invalidates the printed test coupon.
+That is the owner's call, not a correction to apply unasked, so the value
+stands and only the comment has changed.

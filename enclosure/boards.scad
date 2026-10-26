@@ -66,7 +66,7 @@ esp_hole_dx  = 50.04;
 esp_hole_dy  = 25.40;
 esp_hole_dia = 2.60;   // Owner, by eye (calipers flat): about right. Confirm before buying screws
 esp_top_h    = 4.50;   // Owner, by eye: 4.5 mm. Sets the interior height
-esp_bot_h    = 0.50;   // MEASURE: anything on the underside
+esp_bot_h    = 0.00;   // Owner, boards in hand: underside is COMPLETELY FLAT
 esp_usb_w    = 8.95;   // drawing
 
 // ── Enclosure fit (shared by the coupon and the box) ─────────────────────
@@ -74,7 +74,13 @@ fit         = 0.20;  // RP board to cradle clearance, per side
 hole_c      = 0.25;  // USB shell to wall-opening clearance, per side
 notch_c     = 0.15;  // nub clearance inside the notch, per face
 nub_h       = pcb_t; // nub top, flush with the board's top face
-under_clear = 1.5;   // MEASURE: gap under an RP board for underside parts
+// Owner, boards in hand: BOTH modules are completely flat underneath, so
+// this is no longer clearance for parts. It is kept only as room for the
+// solder fillets on the castellated pads in the hand-wired build. A
+// carrier-PCB build does not need it at all; dropping it to 0 shortens the
+// box by 1.5 mm but changes the cradle and invalidates the printed coupon,
+// so it stays until the owner decides. See review-notes #23.
+under_clear = 1.5;   // solder-fillet room, not part clearance
 side_t      = 2.0;   // cradle side rail thickness
 ledge_w     = 1.0;   // support ledge under each long edge
 base_t      = 2.0;   // floor thickness

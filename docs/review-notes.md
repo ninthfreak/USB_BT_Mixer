@@ -319,3 +319,30 @@ look for a pin marked `5V`.
 
 Enclosure is now **64.6 × 79.7 × 14.7 mm**. All 9 guards and 19 collision
 checks still pass, and the coupon suite is unaffected.
+
+## 22. Source documents must be committed, not left in chat
+
+Three times now the owner has supplied a fact that then had to be supplied
+again, because the artefact holding it was lost or because a second copy of
+the same number disagreed:
+
+| Fact | What went wrong |
+|---|---|
+| Exposed USB-C is flush, not proud | Landed in `boards.scad`; `hardware/figures/pictorial.py` kept its own copy of the geometry and contradicted it until 2026-10-25 |
+| ESP32 power pin is silkscreened `5V` | Recorded, but `wiring.md` kept a "naming trap" paragraph asserting the opposite |
+| ESP32 board outline, 53.80 × 27.94 | Read from `ESP32-DEV-KIT-XX.pdf`, which was attached in chat and never committed. Caliper confirmation was then requested for numbers the drawing already dimensions |
+
+**Rules this project now follows:**
+
+1. **Commit the source.** A datasheet, drawing or photo that a dimension came
+   from belongs in the repo. Attachments do not survive a long session.
+2. **One copy of every number.** Already the rule in `boards.scad`; it was
+   broken by a generator that restated the geometry. Generators read the
+   source file.
+3. **"I cannot re-open the source" is not "the number is unverified."** Say
+   which it is. Asking for a re-measurement of a recorded vendor dimension
+   is work billed back to the owner for a filing failure.
+
+Outstanding: `ESP32-DEV-KIT-XX.pdf` is still not in the repo. The numbers are
+extracted into `wiring.md` and `boards.scad`, so nothing is blocked, but the
+source should be archived under `docs/` when convenient.

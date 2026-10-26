@@ -61,15 +61,37 @@ We draw both the symbol and the footprint, so the numbering is ours:
 **ESP32-DEV-KIT** — pads 1–19 are header J3, pads 20–38 are J4 (so J4 pin *n*
 is our pad 19 + *n*).
 
+## Dimensions: use what is recorded
+
+Both modules are dimensioned by Waveshare and both sets of numbers are already
+written down. **Do not ask the owner to re-measure them.**
+
+| Board | Source | Where |
+|---|---|---|
+| RP2350-USB-C | Waveshare drawing, in their GitHub repo | `enclosure/boards.scad` |
+| ESP32-DEV-KIT | Waveshare drawing, supplied by the owner as `ESP32-DEV-KIT-XX.pdf` | `hardware/wiring.md`, `enclosure/boards.scad` |
+
+These carry equal authority. An earlier revision of this file asked for caliper
+confirmation of the ESP32 outline while treating the RP2350 outline as settled
+— the only real difference being that the RP2350 drawing can be re-opened on
+demand and the ESP32 PDF cannot, because it was never committed. Not being able
+to re-read a source is not the same as the number being unknown.
+
+`esp_top_h` (4.50) and `esp_hole_dia` (2.60) are the owner's own readings, by
+eye rather than calipers. Only the hole diameter is still soft, and it costs a
+reprint of a plastic boss, not a PCB spin.
+
+The header row spacing (24.94 mm) comes from the same drawing as everything
+else and is taken as recorded. It does not enter an edge-soldered land pattern,
+which references the board outline; re-check it only if through-holes are added.
+
 ## Still open before layout
 
 | Item | State |
 |---|---|
-| ESP32 board width and length | 27.94 × 53.80 from the drawing, ~90%. **Confirm with calipers** |
-| ESP32 header row spacing | Unknown (24.94 vs 25.40). Irrelevant for edge-soldered pads; matters only if through-holes are added |
-| `ESP32-DEV-KIT-XX.pdf` | Not in this repo. It was attached in chat and lost. Commit it to `docs/` when re-supplied |
 | Footprints | None drawn yet |
 | Board outline | Must follow `enclosure/boards.scad`; the exposed USB-C ports have to meet the port wall |
+| `ESP32-DEV-KIT-XX.pdf` | **Archive it.** The numbers are extracted, but the source should live in `docs/` so it survives. Not a blocker |
 
 ## Deliberate design choices
 

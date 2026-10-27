@@ -150,8 +150,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 </header>
 
 <div class="flag">
-  <h3>This is now the fallback build</h3>
-  <p class="sub" style="margin:0">Since 2026-10-26 the plan is a carrier PCB that all three boards solder onto (<code>hardware/carrier/</code>). This guide stays as the hand-wired route; the circuit is the same. Updated the same day after the carrier audit: the clock loop-backs moved to <code>GPIO13</code> and <code>GPIO32</code>, the series resistors are now 1 kΩ and also sit on both UART transmit lines, and three pull-down resistors were added.</p>
+  <h3>Out of date — do not wire from this page</h3>
+  <p class="sub" style="margin:0">Since 2026-10-27 the input boards turn round so their <b>native USB port</b> (the proud one) faces the hosts, and several ESP32 pins changed: input audio on <code>GPIO13</code>/<code>GPIO35</code>, clocks on <code>GPIO26</code>→<code>GPIO25</code> and <code>GPIO14</code>→<code>GPIO33</code>, UART on <code>GPIO4</code>/<code>16</code> and <code>GPIO21</code>/<code>19</code>. The figures and checklist below show the old orientation and pins. The current design is the carrier PCB (<code>hardware/carrier/</code>); its pin map is in <code>hardware/wiring.md</code>. Ask for this guide to be redrawn if you build the loom.</p>
 </div>
 
 <section>

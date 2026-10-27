@@ -69,6 +69,16 @@ https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp
 
 ---
 
+### After the audit (2026-10-27)
+
+The layout these findings describe has since been redone: the input boards
+were turned so their native USB faces the hosts (review-notes #25), the ESP32
+pins re-chosen, and every signal now routes on the top layer with the bottom
+a ground plane plus power. The fixes above all carry over; see the README for
+the current board.
+
+---
+
 ## The original audit
 
 *As written before the fix pass. Verdict at the time: do not order.*

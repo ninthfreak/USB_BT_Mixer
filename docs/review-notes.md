@@ -401,3 +401,34 @@ was invisible to the project's custom checks and visible to DRC. DRC is now
 the gate in `hardware/carrier/build.sh`, and each custom check has been shown
 to fail on a deliberately broken board.
 
+## 25. The native USB port was facing inward (2026-10-27)
+
+Each RP2350-USB-C has two USB-C ports. Waveshare calls one the
+"programming" port: the RP2350's **native USB**, the only port its bootloader
+works on. The other is **PIO-USB** on GPIO12/13. The owner confirmed the
+programming port is the **internal one, whose shell stands proud**; the flush
+one is PIO-USB.
+
+Every document so far had the hosts plugging into the flush port, so the
+design had them on **PIO-USB**. That would have put the USB audio device
+(isochronous) and the network control link on a software USB stack whose
+device mode is experimental (`docs/viability-review.md`: ~25%). The docs
+implicitly assumed the opposite: `wiring.md` called the inward port "the
+second USB-C port, PIO-USB".
+
+**Fix (owner: "If that's how they are to be used"):** both boards turned
+180°. The native port faces the hosts and hangs ~1 mm past the carrier's
+front edge; the PIO-USB port faces inward, unused.
+
+| Consequence | Effect |
+|---|---|
+| Firmware | Hosts on native USB, as the architecture assumes. No PIO-USB needed |
+| Programming | Through the front ports, everything soldered. BOOT + plug in for the first flash; after that a reboot-to-bootloader command |
+| Carrier | Re-placed and re-routed; ESP32 pins re-chosen (`wiring.md`). Still every signal on one layer |
+| Plug forces | Pads now start 2.88 mm from the port shell instead of 9.8 mm, so solder at that end helps |
+| Enclosure | The port wall now meets a **proud** shell, and the retention notches are at the inner end. `enclosure/box.scad` (loom build) is out of date on both counts; the carrier needs a new enclosure anyway |
+| Loom guide | `hardware/wiring-guide.html` draws the old orientation and pins; marked out of date |
+
+**Confidence:** high that native USB is required for this design; the
+physical identification is the owner's, boards in hand.
+

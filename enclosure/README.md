@@ -1,5 +1,7 @@
 # Enclosure
 
+> **Out of date since 2026-10-27 (review-notes #25):** the input boards now face the port wall with their **native USB** port, whose shell is **proud**, not the flush PIO-USB port this box was built around, and their retention notches are now at the inner end. The port-opening and nub logic below describes the old orientation. The carrier build needs a new enclosure anyway.
+
 ## Status
 
 | Part | State |

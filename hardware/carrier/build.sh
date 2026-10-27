@@ -22,7 +22,8 @@ $PY check_netlist.py
 $PY check_pcb.py
 $PY drc.py --unrouted          # placement: courtyards, holes, silk, pad nets
 
-$PY route.py
+$PY route.py                   # lays the committed route (carrier.ses);
+                               # after a placement change: route.py --reroute
 $PY drc.py                     # routed: everything, connectivity included
 $PY check_routing.py
 

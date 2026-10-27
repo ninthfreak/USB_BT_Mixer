@@ -11,7 +11,9 @@ tracks route.py actually laid and checks what the rules alone would pass:
      upper bound on any one path through it
   3. the bottom pour stays a ground plane: at least 80 % of the board area
      is filled GND copper on B.Cu, so the clocks on top have a return path
-  4. the two pours are stitched: at least 20 GND vias
+  4. the layout rule (gen_pcb.py): every signal stays on the top layer --
+     no signal track on B.Cu and no signal via. Only power runs on the
+     bottom, and the only vias are ground's
 """
 import collections, pathlib, sys
 import pcbnew
@@ -27,7 +29,8 @@ I2S_BUDGET = 100.0
 CHAINS = {"BCLK to in 1": ("BCLK", "BCLK1"), "BCLK to in 2": ("BCLK", "BCLK2"),
           "LRCK to in 1": ("LRCK", "LRCK1"), "LRCK to in 2": ("LRCK", "LRCK2"),
           "AUD1": ("AUD1",), "AUD2": ("AUD2",)}
-B_FILL_MIN, STITCH_MIN = 0.80, 20
+B_FILL_MIN = 0.80
+GND = "GND"
 
 def main():
     b = pcbnew.LoadBoard(str(HERE / "carrier.kicad_pcb"))
@@ -72,16 +75,21 @@ def main():
           f"bottom {fill.get('B', 0) / area:.0%} of {area:.0f} mm2")
     if fill.get("B", 0) / area < B_FILL_MIN:
         fails.append(f"bottom GND pour covers {fill.get('B', 0) / area:.0%} (want >= {B_FILL_MIN:.0%})")
-    print(f"GND vias: {vias['GND']}")
-    if vias["GND"] < STITCH_MIN:
-        fails.append(f"only {vias['GND']} GND vias (want >= {STITCH_MIN})")
+    sig_bottom = {n: L for n, L in bottom.items() if n not in POWER and n != GND and L > 0}
+    sig_vias = {n: k for n, k in vias.items() if n != GND}
+    print(f"signals on B.Cu: {sig_bottom or 'none'}; signal vias: {sig_vias or 'none'}; "
+          f"GND vias: {vias[GND]}")
+    for n, L in sig_bottom.items():
+        fails.append(f"{n}: {L:.1f} mm on the bottom layer (signals stay on top)")
+    for n, k in sig_vias.items():
+        fails.append(f"{n}: {k} via(s) (signals never change layer)")
 
     if fails:
         print("\nFAIL")
         for f in fails:
             print("  -", f)
         sys.exit(1)
-    print("\nOK: power nets full width, I2S within budget, bottom pour solid and stitched")
+    print("\nOK: power nets full width, I2S within budget, bottom pour solid, every signal on top")
 
 if __name__ == "__main__":
     main()

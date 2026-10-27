@@ -6,7 +6,7 @@ Generated from `netlist.py` by `gen_table.py`. Do not edit by hand.
 and proves it matches the same source, so this table and the schematic
 cannot disagree.
 
-**25 nets, 72 pads, 21 parts.**
+**22 nets, 66 pads, 21 parts.**
 
 ## Power
 
@@ -28,10 +28,10 @@ cannot disagree.
 
 | Net | Connects |
 |---|---|
-| **BCLK** | `R1.1`, `R2.1`, `U3.IO25`, `U3.IO13` |
+| **BCLK** | `R1.1`, `R2.1`, `U3.IO25`, `U3.IO26` |
 | **BCLK1** | `R1.2`, `U1.GP26` |
 | **BCLK2** | `R2.2`, `U2.GP26` |
-| **LRCK** | `R3.1`, `R4.1`, `U3.IO32`, `U3.IO33` |
+| **LRCK** | `R3.1`, `R4.1`, `U3.IO33`, `U3.IO14` |
 | **LRCK1** | `R3.2`, `U1.GP27` |
 | **LRCK2** | `R4.2`, `U2.GP27` |
 
@@ -39,29 +39,26 @@ cannot disagree.
 
 | Net | Connects |
 |---|---|
-| **AUD1** | `R7.1`, `U1.GP28`, `U3.IO35` |
-| **AUD2** | `U2.GP28`, `U3.IO26` |
+| **AUD1** | `U1.GP28`, `U3.IO13` |
+| **AUD2** | `R7.1`, `U2.GP28`, `U3.IO35` |
 
 ## UART, one pair per input board
 
 | Net | Connects |
 |---|---|
 | **U1_TX** | `U1.GP4`, `U3.IO16` |
-| **ESP_TX1** | `R5.1`, `U3.IO17` |
+| **ESP_TX1** | `R5.1`, `U3.IO4` |
 | **U1_RX** | `R5.2`, `U1.GP5` |
-| **U2_TX** | `U2.GP4`, `U3.IO18` |
-| **ESP_TX2** | `R6.1`, `U3.IO19` |
+| **U2_TX** | `U2.GP4`, `U3.IO19` |
+| **ESP_TX2** | `R6.1`, `U3.IO21` |
 | **U2_RX** | `R6.2`, `U2.GP5` |
 
-## Breakout header
+## Debug header
 
 | Net | Connects |
 |---|---|
 | **DBG1** | `J1.DBG1`, `U1.GP3` |
 | **DBG2** | `J1.DBG2`, `U2.GP3` |
-| **SP1** | `J1.SP1`, `U3.IO4` |
-| **SP2** | `J1.SP2`, `U3.IO21` |
-| **SP3** | `J1.SP3`, `U3.IO14` |
 
 ## Parts
 
@@ -78,14 +75,14 @@ cannot disagree.
 | R4 | 1k | LRCK series to input 2; limits back-feed |
 | R5 | 1k | UART TX series to input 1; limits back-feed |
 | R6 | 1k | UART TX series to input 2; limits back-feed |
-| R7 | 100k | AUD1 pull-down: GPIO35 has no internal pull |
+| R7 | 100k | AUD2 pull-down: GPIO35 has no internal pull |
 | R8 | 4k7 | Input 1 GP29 pull-down; omit to free the pin |
 | R9 | 4k7 | Input 2 GP29 pull-down; omit to free the pin |
 | C1 | 22uF | Rail bulk, at the ESP32 |
 | C2 | 100nF | Rail bypass, at the ESP32 |
 | C3 | 100nF | Input 1 supply bypass |
 | C4 | 100nF | Input 2 supply bypass |
-| J1 | 1x6 | Debug + spare GPIO breakout |
+| J1 | 1x3 | Debug serial breakout |
 | TP1 | RAIL | Rail test point -- MEASURE here |
 | TP2 | GND | Ground test point |
 ## What to solder
@@ -115,16 +112,16 @@ load, as the current lid's press posts do.
 | **Mechanical** | `9 GP9`, `10 GP0`, `18 GP8` |
 | Leave bare | 3 3V3, 8 GP10, 11 GP1, 12 GP2, 16 GP6, 17 GP7 |
 
-### U3 (ESP32-DEV-KIT) — solder 19 of 34 lands
+### U3 (ESP32-DEV-KIT) — solder 16 of 34 lands
 
 | | Pads |
 |---|---|
-| **Net** | `6 IO35`, `7 IO32`, `8 IO33`, `9 IO25`, `10 IO26`, `12 IO14`, `14 GND`, `15 IO13`, `19 5V`, `25 IO21`, `26 GND`, `27 IO19`, `28 IO18`, `30 IO17`, `31 IO16`, `32 IO4` |
+| **Net** | `6 IO35`, `8 IO33`, `9 IO25`, `10 IO26`, `12 IO14`, `14 GND`, `15 IO13`, `19 5V`, `25 IO21`, `26 GND`, `27 IO19`, `31 IO16`, `32 IO4` |
 | **Mechanical** | `3 IO36`, `22 IO22`, `38 CLK` |
-| Leave bare | 4 IO39, 5 IO34, 11 IO27, 13 IO12, 16 SD2, 17 SD3, 18 CMD, 23 TX0, 24 RX0, 29 IO5, 33 IO0, 34 IO2, 35 IO15, 36 SD1, 37 SD0 |
+| Leave bare | 4 IO39, 5 IO34, 7 IO32, 11 IO27, 13 IO12, 16 SD2, 17 SD3, 18 CMD, 23 TX0, 24 RX0, 28 IO18, 29 IO5, 30 IO17, 33 IO0, 34 IO2, 35 IO15, 36 SD1, 37 SD0 |
 | No land (antenna overhang) | 1 3V3, 2 EN, 20 GND, 21 IO23 |
 
-**43 joints instead of 70.**
+**40 joints instead of 70.**
 
 
 ## Deliberately not connected
@@ -151,4 +148,4 @@ load, as the current lid's press posts do.
 | `U3.CMD` | Module flash. |
 | `U3.CLK` | Module flash. |
 
-Spare pads, free for later use: `U1.GP0`, `U1.GP1`, `U1.GP2`, `U1.GP6`, `U1.GP7`, `U1.GP8`, `U1.GP9`, `U1.GP10`, `U2.GP0`, `U2.GP1`, `U2.GP2`, `U2.GP6`, `U2.GP7`, `U2.GP8`, `U2.GP9`, `U2.GP10`, `U3.IO22`.
+Spare pads, free for later use: `U1.GP0`, `U1.GP1`, `U1.GP2`, `U1.GP6`, `U1.GP7`, `U1.GP8`, `U1.GP9`, `U1.GP10`, `U2.GP0`, `U2.GP1`, `U2.GP2`, `U2.GP6`, `U2.GP7`, `U2.GP8`, `U2.GP9`, `U2.GP10`, `U3.IO22`, `U3.IO17`, `U3.IO18`, `U3.IO32`.

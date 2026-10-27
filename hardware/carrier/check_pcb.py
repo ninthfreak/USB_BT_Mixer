@@ -5,7 +5,9 @@ DRC (drc.py) owns clearances, courtyard overlaps, holes and connectivity.
 This checks the decisions behind the layout, read from the board KiCad
 actually built:
 
-  1. both exposed USB-C ports sit exactly on the front edge (the port wall)
+  1. both input boards face the hosts with their NATIVE USB port: turned
+     180 degrees, board edge on the front edge, the proud shell hanging past
+     it by at least 0.5 mm (review-notes #25)
   2. the ESP32's USB-C end overhangs the left edge, so a flashing cable's
      overmold hangs in free air (AUDIT.md #9)
   3. the ESP32's antenna end overhangs the notch by the whole antenna
@@ -39,10 +41,17 @@ def main():
     fails = []
 
     for ref in ("U1", "U2"):
-        y = MM(fp[ref].GetPosition().y) - G.B["board_l"] / 2
-        print(f"{ref} exposed-port edge at y = {y:+.3f}")
-        if abs(y) > 0.01:
-            fails.append(f"{ref}: exposed port edge at y={y:.3f}, not on the front edge")
+        rot = fp[ref].GetOrientationDegrees() % 360
+        edge = MM(fp[ref].GetPosition().y) - G.B["board_l"] / 2
+        shell = module_box(fp[ref])[1]          # fab drawing includes the shells
+        print(f"{ref}: turned {rot:.0f} deg, board edge at y = {edge:+.3f}, "
+              f"native USB shell overhangs the front edge by {-shell:.2f} mm")
+        if abs(rot - 180) > 0.01:
+            fails.append(f"{ref}: turned {rot:.0f} deg; the native USB port must face the front (180)")
+        if abs(edge) > 0.01:
+            fails.append(f"{ref}: board edge at y={edge:.3f}, not on the front edge")
+        if -shell < 0.5:
+            fails.append(f"{ref}: native USB shell overhangs only {-shell:.2f} mm (want >= 0.5)")
 
     x0, y0, x1, y1 = module_box(fp["U3"])
     usb = -x0
@@ -79,7 +88,7 @@ def main():
         for f in fails:
             print("  -", f)
         sys.exit(1)
-    print("\nOK: ports on the edge, ESP32 overhangs both ends, holes have proper webs")
+    print("\nOK: native USB ports over the front edge, ESP32 overhangs both ends, holes have proper webs")
 
 if __name__ == "__main__":
     main()

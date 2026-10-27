@@ -13,7 +13,15 @@ the 305 bookkeeping violations the old file produced.
 
 Frame: origin at the carrier's front-left corner, +X right, +Y back (KiCad
 draws +Y downward, so the front edge is at the TOP of the view). y = 0 is the
-port wall: the two exposed USB-C ports sit on it.
+port wall. Each input board is turned 180 degrees so its NATIVE USB port (the
+"programming" port, proud of the board edge) faces the hosts and hangs over
+that edge; its PIO-USB port faces inward, unused (review-notes #25).
+
+Layout rules, so the board reads the way it works (owner, 2026-10-27):
+  * top layer: every signal; no signal changes layer
+  * bottom layer: a solid ground plane, plus power (the rail runs round the
+    front and left edges, behind the port ends, where no signal crosses it)
+  * related lines run together: each board's I2S group and UART pair
 
 Board dimensions come from enclosure/boards.scad; nothing is restated here.
 """
@@ -41,6 +49,9 @@ W = 70.0
 
 RP_HL = B["board_l"] / 2
 RP_COURT = RP_HL + B["usb_over_in"] + 0.25      # courtyard past the module centre, +Y
+# The strip and the ESP32's position below were sized when the native port
+# faced inward (RP_COURT behind the module). Kept: the rotated boards leave
+# the strip 1 mm deeper, and the owner accepted the 70 x 79.6 outline.
 
 # ESP32: turned 180 deg so header J3 (power + I2S) faces the input boards.
 # Its USB-C end overhangs the LEFT edge by 1 mm so a flashing cable's overmold
@@ -54,8 +65,8 @@ ESP_HW, ESP_HD = B["esp_w"] / 2, B["esp_d"] / 2
 ESP_CX = -USB_OVERHANG + ESP_HW
 X_NOTCH = ESP_CX + ESP_HW - ANT_OVERHANG
 
-# Service strip between the input boards and the ESP32: two rows of 3 mm
-# parts with 0.6 mm between everything.
+# Service strip between the input boards and the ESP32: room for two rows of
+# 3 mm parts with 0.6 mm between everything.
 ROW_A = RP_COURT + 16.5 + 0.6 + 1.5               # 36.35
 ROW_B = ROW_A + 3.0 + 0.6                         # 39.95
 ESP_COURT = ESP_HD + 1.10 + 0.5                   # land pads + 0.5 margin
@@ -69,29 +80,32 @@ H = round(MH_REAR + 1.35 + 1.6, 1)                # 1.6 mm FR4 web behind the ho
 
 OUTLINE = [(0, 0), (W, 0), (W, Y_STEP), (X_NOTCH, Y_STEP), (X_NOTCH, H), (0, H)]
 
-MODULES = {"U1": (17.55, RP_HL, 0), "U2": (52.45, RP_HL, 0),
+MODULES = {"U1": (17.55, RP_HL, 180), "U2": (52.45, RP_HL, 180),
            "U3": (ESP_CX, ESP_CY, 180)}
 
-# Everything else is placed by COURTYARD CENTRE: KiCad computes the courtyard
-# after rotation and we shift the part to put its centre here.
-PLACE = {
-    # Left column, beside input 1's power edge.
-    "D1": (3.60, 28.49, 90),
-    "C3": (1.90, 19.18, 90), "R8": (5.50, 17.87, 90),
-    # Channel, beside input 2's power edge: diode, bypass and GP29 pull-down
-    # within a few mm of the pads they serve. R5 sits by input 1's GP5.
-    "D2": (36.90, 28.49, 90), "C4": (40.40, 30.10, 90),
-    "R9": (40.40, 17.87, 90), "R5": (29.60, 17.40, 90),
-    # Right column, beside input 2's UART edge.
-    "R6": (66.40, 17.40, 90), "J1": (66.40, 31.00, 0),
-    # Strip row A: rail test points side by side, AUD1 pull-down.
-    "TP1": (8.50, ROW_A, 0), "TP2": (12.30, ROW_A, 0), "R7": (48.86, ROW_A, 0),
-    # Strip row B, against the ESP32's J3 row: rail bypass beside its 5V pad,
-    # then the four clock resistors at the driving end.
-    "C1": (3.25, (ROW_A + ROW_B) / 2 - 0.55, 0),
-    "C2": (10.15, ROW_B, 0),
-    "R3": (19.16, ROW_B, 0), "R1": (29.48, ROW_B, 0),
-    "R2": (39.80, ROW_B, 0), "R4": (50.12, ROW_B, 0),
+# Everything else is placed by PAD 1 position (x, y, rotation), laid out by
+# signal flow. Seen from the ESP32, west to east the board carries: input 1's
+# UART pair, input 1's I2S group, input 2's UART pair, input 2's I2S group.
+# Input 2's clock branches cross its UART pair by passing between the pads of
+# R2 and R4, so no signal needs the bottom layer.
+PLACE_PAD = {
+    # Strip, west end: rail bulk and bypass at the ESP32's 5V pad; test points.
+    "C1": (2.15, 38.7, 0), "C2": (7.7, 40.7, 90),
+    "TP1": (5.0, 33.0, 0), "TP2": (5.0, 30.0, 0),
+    # Strip: input 1's clock resistors, standing, inline on their lanes.
+    "R3": (20.82, 40.3, 90), "R1": (25.9, 40.3, 90),
+    # Strip: input 2's clock resistors, lying across input 2's UART lanes.
+    "R4": (35.5, 35.8, 0), "R2": (32.3, 38.8, 0),
+    # Channel, front: input 1's supply diode and bypass at its power pads.
+    "D1": (37.4, 2.4, 180), "C3": (34.4, 6.4, 180),
+    # Channel: input 1's GP29 pull-down, debug header, input 2's RX resistor.
+    "R8": (29.6, 11.6, 270), "J1": (34.5, 11.0, 0), "R6": (40.5, 30.0, 90),
+    # Right margin: input 2's supply diode and bypass at its power pads.
+    "D2": (68.0, 8.0, 270), "C4": (68.0, 18.3, 270),
+    # Behind input 2: its GP29 and audio pull-downs, fed down the margin.
+    "R9": (60.3, 35.0, 0), "R7": (60.3, 38.2, 0),
+    # Behind the ESP32: input 1's RX resistor, at the ESP32's TX pin.
+    "R5": (17.5, 75.6, 180),
 }
 MOUNT = [(3.0, 3.0), (W - 3.0, 3.0), (3.0, MH_REAR), (X_NOTCH - 3.0, MH_REAR)]
 MOUNT_FP = "MountingHole:MountingHole_2.7mm_M2.5"
@@ -195,13 +209,13 @@ def main():
         fp.SetPosition(V(x, y))
         finish(fp, ref)
 
-    for ref, (cx, cy, rot) in PLACE.items():
+    for ref, (px, py, rot) in PLACE_PAD.items():
         fp = load(N.FOOTPRINTS[ref])
         fp.SetOrientationDegrees(rot)
         fp.SetPosition(V(0, 0))
-        finish(fp, ref)          # must belong to the board before its
-        x0, y0, x1, y1 = courtyard_box(fp)   # courtyard can be computed
-        fp.SetPosition(V(cx - (x0 + x1) / 2, cy - (y0 + y1) / 2))
+        finish(fp, ref)
+        p1 = [q for q in fp.Pads() if q.GetNumber() == "1"][0].GetPosition()
+        fp.SetPosition(V(px - MM(p1.x), py - MM(p1.y)))
 
     # Refdes on silkscreen, centred on each part's body and running along it,
     # so it neither overlaps a neighbour nor sits on copper. Test points and
@@ -210,18 +224,32 @@ def main():
         ref = fp.GetReference()
         kind = N.PARTS.get(ref, {}).get("kind")
         r = fp.Reference()
-        if kind in ("r", "c", "d"):
+        if kind in ("r", "c", "d") and "Vertical" in N.FOOTPRINTS[ref]:
+            # standing resistor: the body is a circle over pad 1; label beside it
+            p1 = [q for q in fp.Pads() if q.GetNumber() == "1"][0].GetPosition()
+            r.SetPosition(V(MM(p1.x) - 2.2, MM(p1.y) - 1.27))
+            r.SetTextAngleDegrees(90)
+        elif kind in ("r", "c", "d"):
             pads = list(fp.Pads())
             mx = (pads[0].GetPosition().x + pads[1].GetPosition().x) // 2
             my = (pads[0].GetPosition().y + pads[1].GetPosition().y) // 2
             r.SetPosition(pcbnew.VECTOR2I(mx, my))
             r.SetTextAngleDegrees(fp.GetOrientationDegrees())
+        if kind == "d":
+            # keep the cathode "K" on the board: if rotation put it past the
+            # edge, mirror it to the other side of pad 1
+            p1 = [q for q in fp.Pads() if q.GetNumber() == "1"][0].GetPosition()
+            for g in fp.GraphicalItems():
+                if g.GetClass() in ("MTEXT", "FP_TEXT", "PCB_TEXT") and g.GetText() == "K":
+                    t = g.GetPosition()
+                    if MM(t.x) > W - 1.0 or MM(t.x) < 1.0:
+                        g.SetPosition(pcbnew.VECTOR2I(2 * p1.x - t.x, 2 * p1.y - t.y))
         elif kind == "cpol":
             # The can's outline and its negative-side hatching leave no room
             # for the refdes inside; it is labelled just below instead.
             r.SetVisible(False)
             c = fp.GetPosition()
-            text(board, ref, MM(c.x) + 1.25, MM(c.y) + 3.75, 0.8)
+            text(board, ref, MM(c.x) + 1.25, MM(c.y) - 3.6, 0.8)
         elif kind in ("tp", "hdr"):
             r.SetVisible(False)
         if kind in ("r", "c", "d"):
@@ -237,22 +265,17 @@ def main():
     # Ground pours on both layers. KiCad fills them in route.py, after the
     # tracks exist; drc.py then confirms every GND pad reaches the pour.
     gnd = info["GND"]
-    zone(board, OUTLINE, pcbnew.F_Cu, gnd, name="GND top")
     zone(board, OUTLINE, pcbnew.B_Cu, gnd, name="GND bottom")
     zone(board, KEEPOUT, pcbnew.F_Cu, rule=True, name="ANTENNA KEEPOUT")
 
     # Labels the builder and the debugger will want.
-    text(board, "< IN 1", 31.4, 3.2, 1.0)
-    text(board, "IN 2 >", 38.6, 3.2, 1.0)
-    text(board, "RAIL", PLACE["TP1"][0], ROW_A - 1.8, 0.8)
-    text(board, "GND", PLACE["TP2"][0] + 0.5, ROW_A - 1.8, 0.8)
-    jx, jy = PLACE["J1"][0], PLACE["J1"][1]
-    for i, lab in enumerate(["G", "D1", "D2", "S1", "S2", "S3"]):
-        text(board, lab, jx - 1.6, jy - 6.35 + i * 2.54, 0.8, just="right")
-    # kept between the rear screw heads (their courtyards end ~6 mm in)
-    text(board, "USB_BT_Mixer carrier v0.2", X_NOTCH / 2, H - 5.0, 1.0)
-    text(board, "J1  G=GND  D1/D2=debug TX in1/in2", X_NOTCH / 2, H - 3.3, 0.8)
-    text(board, "S1=IO4  S2=IO21  S3=IO14", X_NOTCH / 2, H - 1.9, 0.8)
+    text(board, "RAIL", 6.4, 33.0, 0.8, just="left")
+    text(board, "GND", 3.6, 30.0, 0.8, just="right")
+    for i, lab in enumerate(["G", "D1", "D2"]):
+        text(board, lab, 32.9, 11.0 + i * 2.54, 0.8, just="right")
+    text(board, "IN 1", 17.55, 27.5, 1.0)
+    text(board, "IN 2", 52.45, 27.5, 1.0)
+    text(board, "USB_BT_Mixer v0.3", 63.6, 41.0, 0.8)
     text(board, "ANTENNA OVERHANGS HERE", X_NOTCH - 1.2, (Y_STEP + H) / 2,
          0.8, layer=pcbnew.Cmts_User, rot=90)
 
@@ -261,7 +284,7 @@ def main():
     out = HERE / "carrier.kicad_pcb"
     pcbnew.SaveBoard(str(out), board)
     print(f"wrote carrier.kicad_pcb: {W} x {H} mm (notch from x {X_NOTCH:.1f}, "
-          f"y {Y_STEP}), {len(MODULES) + len(PLACE)} parts, {len(MOUNT)} holes, unrouted")
+          f"y {Y_STEP}), {len(MODULES) + len(PLACE_PAD)} parts, {len(MOUNT)} holes, unrouted")
 
 if __name__ == "__main__":
     main()

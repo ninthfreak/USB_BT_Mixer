@@ -102,12 +102,13 @@ def rp2350():
     o += rect(-uw, -hl - B["usb_over_out"], uw, -hl - B["usb_over_out"] + ud, FAB)
     o += rect(-uw, hl + B["usb_over_in"], uw, hl + B["usb_over_in"] - ud, FAB)
 
-    # silk: short ticks clear of the pads, plus a pin-1 dot
-    # No silkscreen along the exposed-port edge: it lies on the board edge.
+    # silk: short ticks clear of the pads, plus a pin-1 dot. On the carrier
+    # the native (+Y) end sits on the board's front edge, so nothing is drawn
+    # along it; the PIO-USB (-Y) end faces inward and gets the cross line.
     for sx in (-1, 1):
-        o.append(line(sx * hw, hl, sx * hw, y0 + 1.2, SILK))
-        o.append(line(sx * hw, -hl + 0.6, sx * hw, ny1 - 0.3, SILK))
-    o.append(line(-hw, hl, hw, hl, SILK))
+        o.append(line(sx * hw, hl - 0.6, sx * hw, y0 + 1.2, SILK))
+        o.append(line(sx * hw, -hl, sx * hw, ny1 - 0.3, SILK))
+    o.append(line(-hw, -hl, hw, -hl, SILK))
     # pin-1 dot inside the outline beside pad 1: outside it, it landed on
     # whatever part sat next to the module
     o.append(circle(-hw + 0.9, hl - 1.0, 0.25, SILK))

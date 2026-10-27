@@ -15,7 +15,7 @@ GROUPS = [
     ("I2S audio (returns to the ESP32)", ["AUD1", "AUD2"]),
     ("UART, one pair per input board", ["U1_TX", "ESP_TX1", "U1_RX",
                                         "U2_TX", "ESP_TX2", "U2_RX"]),
-    ("Breakout header", ["DBG1", "DBG2", "SP1", "SP2", "SP3"]),
+    ("Debug header", ["DBG1", "DBG2"]),
 ]
 
 def cell(pads, ref, pad):

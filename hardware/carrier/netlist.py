@@ -5,16 +5,27 @@ human-readable connection table, and the check that the two agree. Nothing
 here is copied from another file -- hardware/wiring.md is prose ABOUT this,
 and check_netlist.py verifies the generated schematic matches.
 
-Pin numbering (ours, since we draw both symbol and footprint):
+Pin numbering (ours, since we draw both symbol and footprint). Each is
+written against a picture of the real board that is committed in docs/sources,
+because "left" and "right" mean nothing without one: for five weeks the input
+boards' land pattern was the mirror image of the real board, and every check
+agreed with it (docs/project-review-2026-11.md #1).
 
-  RP2350-USB-C (U1, U2), 18 pads, looking at the component side with the
-  PROGRAMMING port (the proud one) at the top:
-      1..9   left edge, top to bottom:  5V GND 3V3 GP29 GP28 GP27 GP26 GP10 GP9
-      10..18 right edge, top to bottom: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8
+  RP2350-USB-C (U1, U2), 18 pads. docs/sources/rp2350-usb-c-pinout.png:
+  component side up, NATIVE USB port (the proud one, beside BOOT and RST) at
+  the TOP of the picture:
+      1..9   LEFT edge, top to bottom:  5V GND 3V3 GP29 GP28 GP27 GP26 GP10 GP9
+      10..18 RIGHT edge, top to bottom: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8
 
-  ESP32-DEV-KIT (U3), 38 pads:
-      1..19  header J3
-      20..38 header J4  (so J4 pin n == our pin 19 + n)
+  ESP32-DEV-KIT (U3), 38 pads. docs/sources/esp32-dev-kit-drawing.png:
+  component side up, USB-C at the LEFT, antenna at the RIGHT:
+      1..19  header J3, the TOP row, numbered from the ANTENNA end:
+             pad 1 = 3V3 (far right) ... pad 19 = 5V (far left)
+      20..38 header J4, the BOTTOM row, also from the antenna end:
+             pad 20 = GND (far right) ... pad 38 = CLK (far left)
+             (so J4 pin n == our pad 19 + n)
+
+check_pcb.py holds both pictures against the placed board.
 """
 
 # ── Module pin maps ──────────────────────────────────────────────────────
@@ -39,30 +50,42 @@ PARTS = {
     "D1": dict(kind="d", value="1N5817", desc="Input 1 supply isolation"),
     "D2": dict(kind="d", value="1N5817", desc="Input 2 supply isolation"),
 
-    # 1k, not 33R. With one host connected the other input board is
-    # unpowered, and the ESP32 keeps driving clocks into it; these limit the
-    # current through its protection diodes to ~3 mA (AUDIT.md #3). At 2.8 MHz
-    # into ~10 pF they still give ~22 ns edges against a 177 ns half-period.
-    "R1": dict(kind="r", value="1k", desc="BCLK series to input 1; limits back-feed"),
-    "R2": dict(kind="r", value="1k", desc="BCLK series to input 2; limits back-feed"),
-    "R3": dict(kind="r", value="1k", desc="LRCK series to input 1; limits back-feed"),
-    "R4": dict(kind="r", value="1k", desc="LRCK series to input 2; limits back-feed"),
-    "R5": dict(kind="r", value="1k", desc="UART TX series to input 1; limits back-feed"),
-    "R6": dict(kind="r", value="1k", desc="UART TX series to input 2; limits back-feed"),
-    "R7": dict(kind="r", value="100k", desc="AUD2 pull-down: GPIO35 has no internal pull"),
-    # 4.7k rather than a solder bridge: a bridge is a dead short if firmware
-    # ever drives GP29 high. 4.7k holds it firmly low against the RP2350-E9
-    # input leakage (up to ~120 uA, 0.56 V). Leave unfitted to free the pin.
-    "R8": dict(kind="r", value="4k7", desc="Input 1 GP29 pull-down; omit to free the pin"),
-    "R9": dict(kind="r", value="4k7", desc="Input 2 GP29 pull-down; omit to free the pin"),
+    # 1k in series with every line the ESP32 drives into an input board.
+    # With one host connected the other input board is unpowered and the
+    # ESP32 keeps driving these lines into it. The clocks land on GP9/GP10
+    # and the UART on GP5, which are the RP2350's fault-tolerant pads: with
+    # the chip unpowered "very little current flows into the pin whilst it
+    # is below 3.63 V" (RP2350 datasheet), so nothing is back-fed and these
+    # are no longer what protects the chip. They stay as edge-rate control
+    # beside a 2.4 GHz radio (22 ns edges into ~10 pF at 2.8 MHz, against a
+    # 177 ns half-period) and to limit the current if firmware ever turns a
+    # pin the wrong way round.
+    "R1": dict(kind="r", value="1k", desc="BCLK series to input 1"),
+    "R2": dict(kind="r", value="1k", desc="BCLK series to input 2"),
+    "R3": dict(kind="r", value="1k", desc="LRCK series to input 1"),
+    "R4": dict(kind="r", value="1k", desc="LRCK series to input 2"),
+    "R5": dict(kind="r", value="1k", desc="UART TX series to input 1"),
+    "R6": dict(kind="r", value="1k", desc="UART TX series to input 2"),
+    # R7 (AUD2 pull-down), R8/R9 (GP29 pull-downs), C2-C4 (0.1 uF bypasses):
+    # retired 2026-11-16, not needed (docs/project-review-2026-11.md #5).
+    # The designators are not reused.
+    #
+    # Bleed: an input board with no host is fed its own diode's reverse
+    # leakage from the rail. With nothing to drain it, its VBUS floats up,
+    # and a USB-C host will not switch a port on until VBUS is below 0.8 V
+    # (vSafe0V). 1k holds it there against up to 0.8 mA; it costs 5 mA
+    # while that host is connected.
+    "R10": dict(kind="r", value="1k", desc="Input 1 VBUS bleed: holds it at 0 V with no host"),
+    "R11": dict(kind="r", value="1k", desc="Input 2 VBUS bleed: holds it at 0 V with no host"),
 
     "C1": dict(kind="cpol", value="22uF", desc="Rail bulk, at the ESP32"),
-    "C2": dict(kind="c", value="100nF", desc="Rail bypass, at the ESP32"),
-    "C3": dict(kind="c", value="100nF", desc="Input 1 supply bypass"),
-    "C4": dict(kind="c", value="100nF", desc="Input 2 supply bypass"),
 
-    "J1": dict(kind="hdr", value="1x3", desc="Debug serial breakout",
-               pins=["GND", "DBG1", "DBG2"]),
+    # One 2-pin header beside each input board's GP3, not one shared 3-pin:
+    # a shared header meant a debug line crossing under input 2.
+    "J1": dict(kind="hdr", value="1x2", desc="Input 1 debug serial (optional)",
+               pins=["GND", "DBG1"]),
+    "J2": dict(kind="hdr", value="1x2", desc="Input 2 debug serial (optional)",
+               pins=["GND", "DBG2"]),
     "TP1": dict(kind="tp", value="RAIL", desc="Rail test point -- MEASURE here"),
     "TP2": dict(kind="tp", value="GND", desc="Ground test point"),
 }
@@ -72,67 +95,70 @@ PARTS = {
 NETS = {
     # Power. Each input board's raw VBUS reaches the rail only through its
     # own diode, so the two hosts' 5 V supplies are never tied together.
-    "VBUS1": ["U1.5V", "D1.A", "C3.1"],
-    "VBUS2": ["U2.5V", "D2.A", "C4.1"],
-    "RAIL":  ["D1.K", "D2.K", "U3.5V", "C1.+", "C2.1", "TP1.1"],
+    "VBUS1": ["U1.5V", "D1.A", "R10.1"],
+    "VBUS2": ["U2.5V", "D2.A", "R11.1"],
+    "RAIL":  ["D1.K", "D2.K", "U3.5V", "C1.+", "TP1.1"],
     # U3 pad 20 (a third GND) is off the board under the antenna overhang;
     # pads 14 and 26 carry the ESP32's ground.
     "GND":   ["U1.GND", "U2.GND", "U3.GND", "U3.#26",
-              "C1.-", "C2.2", "C3.2", "C4.2", "R7.2", "R8.2", "R9.2",
-              "J1.GND", "TP2.1"],
-
-    # GP29 is the unused chain input, held low until something uses it.
-    "GP29_1": ["U1.GP29", "R8.1"],
-    "GP29_2": ["U2.GP29", "R9.1"],
+              "C1.-", "R10.2", "R11.2", "J1.GND", "J2.GND", "TP2.1"],
 
     # I2S. The ESP32 is clock master on both; each clock has an output pin
-    # (I2S0 master) and a loop-back input pin (I2S1 slave) wired together on
-    # the ESP32 side of the series resistors. Never IO36/IO39: they glitch
-    # low for ~80 ns whenever the SAR ADC powers up -- reported as tracking
-    # A2DP streaming (AUDIT.md #4).
+    # (I2S0 master) and a loop-back input pin (I2S1 slave) joined under the
+    # ESP32, on its side of the series resistors. Never IO36/IO39: they
+    # glitch low for ~80 ns whenever the SAR ADC powers up -- reported as
+    # tracking A2DP streaming (AUDIT.md #4).
     #
-    # The pins are chosen for the PCB layout (review-notes #25): along the
-    # ESP32's front row, west to east, input 1's audio (IO13), then LRCK out
-    # (IO14), BCLK out (IO26), BCLK in (IO25), LRCK in (IO33) -- so the two
-    # loop-backs nest instead of crossing -- then input 2's UART passes, then
-    # input 2's audio (IO35). The I2S signals go through the GPIO matrix, so
-    # any of these pins can carry them. IO14 is a JTAG pin that some sources
-    # say emits PWM at boot; harmless on a clock output nothing reads yet.
-    "BCLK":  ["U3.IO26", "U3.IO25", "R1.1", "R2.1"],
-    "BCLK1": ["R1.2", "U1.GP26"],
-    "BCLK2": ["R2.2", "U2.GP26"],
-    "LRCK":  ["U3.IO14", "U3.IO33", "R3.1", "R4.1"],
-    "LRCK1": ["R3.2", "U1.GP27"],
-    "LRCK2": ["R4.2", "U2.GP27"],
+    # On the input boards the clocks go to GP9 and GP10, not GP26/GP27. Only
+    # GP26-GP29 are ADC-capable, and those four are the pads with a diode to
+    # the board's 3V3 rail; a clock driven into one while that board has no
+    # host would power its rail through the pin. GP9/GP10 are consecutive
+    # (one PIO "in" group) and sit next along the same edge.
+    #
+    # The ESP32 pins are chosen for the PCB layout. Along its front row,
+    # west to east: input 1's audio (IO13), LRCK out (IO14), BCLK out
+    # (IO26), input 1's UART (IO25, IO33), BCLK in (IO32), LRCK in (IO35).
+    # The clocks' output pins face input 1 and their loop-back pins face
+    # input 2, so the two links under the ESP32 nest instead of crossing,
+    # and input 1's UART ends on the two pads between them. Input 2's audio
+    # and UART pass through the gaps east of IO35 to the rear row. The I2S
+    # and UART signals go through the GPIO matrix, so any of these pins can
+    # carry them; IO35 is input-only, which a loop-back input may be. IO14
+    # is a JTAG pin that some sources say emits PWM at boot; harmless on a
+    # clock output nothing reads yet.
+    "BCLK":  ["U3.IO26", "U3.IO32", "R1.1", "R2.1"],
+    "BCLK1": ["R1.2", "U1.GP9"],
+    "BCLK2": ["R2.2", "U2.GP9"],
+    "LRCK":  ["U3.IO14", "U3.IO35", "R3.1", "R4.1"],
+    "LRCK1": ["R3.2", "U1.GP10"],
+    "LRCK2": ["R4.2", "U2.GP10"],
+    # Both audio inputs are on pins with an internal pull-down, which
+    # firmware must switch on: an input board with no host leaves its line
+    # floating, and a floating line is noise in the mix.
     "AUD1":  ["U1.GP28", "U3.IO13"],
-    # IO35 is input-only with no internal pull: R7 holds AUD2 low while
-    # input 2 is unpowered. IO13 (AUD1) has an internal pull-down.
-    "AUD2":  ["U2.GP28", "U3.IO35", "R7.1"],
+    "AUD2":  ["U2.GP28", "U3.IO18"],
 
-    # UART, one pair per input board. Every net joins a TX to an RX. The
-    # ESP32's TX reaches each board through 1k for the same back-feed reason
-    # as the clocks; the boards' TX lines drive the always-powered ESP32.
-    # Pins chosen so each pair runs straight under the ESP32 to its board.
-    "U1_TX":   ["U1.GP4", "U3.IO16"],
-    "ESP_TX1": ["U3.IO4", "R5.1"],
+    # UART, one pair per input board. Every net joins a TX to an RX.
+    # Firmware must switch on the pull-ups on the ESP32's RX pins (IO33,
+    # IO19): an input board with no host leaves its TX floating.
+    "U1_TX":   ["U1.GP4", "U3.IO33"],
+    "ESP_TX1": ["U3.IO25", "R5.1"],
     "U1_RX":   ["R5.2", "U1.GP5"],
     "U2_TX":   ["U2.GP4", "U3.IO19"],
     "ESP_TX2": ["U3.IO21", "R6.1"],
     "U2_RX":   ["R6.2", "U2.GP5"],
 
-    # Breakout: PIO debug serial from each input board. (The spare-GPIO pins
-    # this header once carried crossed the whole board; the spare ESP32
-    # pads are still on the land pattern if one is ever wanted.)
+    # Breakout: PIO debug serial from each input board.
     "DBG1": ["U1.GP3", "J1.DBG1"],
-    "DBG2": ["U2.GP3", "J1.DBG2"],
+    "DBG2": ["U2.GP3", "J2.DBG2"],
 }
 
 # Deliberately NOT connected, with the reason. Asserted by check_netlist.py.
 NO_CONNECT = {
     "U1.3V3": "Each board has its own regulator. Never tie the 3V3 rails.",
     "U2.3V3": "Each board has its own regulator. Never tie the 3V3 rails.",
-    "U3.IO36": "Erratum: pulled low ~80 ns when the SAR ADC powers up. Was the BCLK loop-back.",
-    "U3.IO39": "Erratum: pulled low ~80 ns when the SAR ADC powers up. Was the LRCK loop-back.",
+    "U3.IO36": "Erratum: pulled low ~80 ns when the SAR ADC powers up. Never a clock.",
+    "U3.IO39": "Erratum: pulled low ~80 ns when the SAR ADC powers up. Never a clock.",
     "U3.IO34": "Battery-sense divider through R28 on the ESP32 board.",
     "U3.IO27": "Drives the ESP32 board's RGB LED through R1.",
     "U3.IO12": "Strapping pin (MTDI).",
@@ -162,15 +188,18 @@ OFF_BOARD = {
 # Listed so check_netlist.py can insist every floating pad is accounted for.
 UNUSED = {f"{u}.{p}": "Spare GPIO"
           for u in ("U1", "U2")
-          for p in ("GP0", "GP1", "GP2", "GP6", "GP7", "GP8", "GP9", "GP10")}
-UNUSED.update({f"U3.{p}": "Spare GPIO" for p in ("IO22", "IO17", "IO18", "IO32")})
+          for p in ("GP0", "GP1", "GP2", "GP6", "GP7", "GP8")}
+# The four ADC-capable pads. GP28 carries the audio out; these three stay
+# free, which also leaves analogue inputs for a volume knob one day. GP29
+# was a chain input with a pull-down; nothing reads it, so it needs neither.
+UNUSED.update({f"{u}.{p}": "Spare GPIO, ADC-capable" for u in ("U1", "U2")
+               for p in ("GP26", "GP27", "GP29")})
+UNUSED.update({f"U3.{p}": "Spare GPIO" for p in ("IO22", "IO17", "IO16", "IO4")})
 
 # Footprints. The two modules are generated by gen_fp.py into carrier.pretty/;
 # everything else is a stock KiCad 7 library part. Axial parts use P7.62 since
-# leads bend to suit; the disc caps use P5.08 because splaying a 2.54 mm part
-# out is easy while squeezing a 5.08 mm one in is not.
+# leads bend to suit.
 _R = "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
-_C = "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm"
 _RV = "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical"
 FOOTPRINTS = {
     "U1": "carrier:RP2350-USB-C",
@@ -178,13 +207,13 @@ FOOTPRINTS = {
     "U3": "carrier:ESP32-DEV-KIT",
     "D1": "Diode_THT:D_DO-41_SOD81_P7.62mm_Horizontal",
     "D2": "Diode_THT:D_DO-41_SOD81_P7.62mm_Horizontal",
-    **{f"R{i}": _R for i in range(1, 10)},
-    # Standing: inline on a lane beside the ESP32, where a lying resistor's
-    # 7.62 mm would force the lane sideways.
-    "R1": _RV, "R3": _RV,
+    "R10": _R, "R11": _R,
+    # Standing: inline on a lane at the ESP32's own pin, where a lying
+    # resistor's 7.62 mm would force the lane sideways.
+    **{f"R{i}": _RV for i in range(1, 7)},
     "C1": "Capacitor_THT:CP_Radial_D5.0mm_P2.50mm",
-    "C2": _C, "C3": _C, "C4": _C,
-    "J1": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical",
+    "J1": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+    "J2": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
     "TP1": "TestPoint:TestPoint_Pad_D1.5mm",
     "TP2": "TestPoint:TestPoint_Pad_D1.5mm",
 }
@@ -196,10 +225,11 @@ FOOTPRINTS = {
 # check_netlist.py asserts: several are the ESP32's flash and strapping pins
 # and tying them anywhere would be actively harmful.
 SOLDER_MECHANICAL = {
-    "U1.GP9":  "far corner, left column", "U1.GP0": "near corner, right column",
-    "U1.GP8":  "far corner, right column",
-    "U2.GP9":  "far corner, left column", "U2.GP0": "near corner, right column",
-    "U2.GP8":  "far corner, right column",
+    # The 5V and GP9 pads hold the left edge's two corners and carry nets.
+    "U1.GP0":  "corner beside the native port, right edge",
+    "U1.GP8":  "far corner, right edge",
+    "U2.GP0":  "corner beside the native port, right edge",
+    "U2.GP8":  "far corner, right edge",
     "U3.IO36": "last pad on the carrier, antenna end of J3",
     "U3.IO22": "last pad on the carrier, antenna end of J4",
     "U3.CLK":  "corner, USB-C end of J4",

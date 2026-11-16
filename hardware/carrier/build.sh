@@ -27,7 +27,9 @@ $PY route.py                   # lays the committed route (carrier.ses);
 $PY drc.py                     # routed: everything, connectivity included
 $PY check_routing.py
 
+$PY fit_check.py               # 1:1 print with every module pad named
+
 xvfb-run -a kicad-cli sch export pdf -o carrier.pdf carrier.kicad_sch >/dev/null
 xvfb-run -a kicad-cli pcb export pdf --layers F.Cu,B.Cu,Edge.Cuts \
   --exclude-refdes --exclude-value -o carrier-pcb.pdf carrier.kicad_pcb >/dev/null
-echo "carrier.pdf and carrier-pcb.pdf refreshed"
+echo "carrier.pdf, carrier-pcb.pdf and carrier-fit-check.pdf refreshed"

@@ -10,9 +10,19 @@ its hole centres -- which is why the one dimension still soft on the ESP32
 Board dimensions come from enclosure/boards.scad, parsed, never restated here.
 Waveshare dimensions both boards; see hardware/wiring.md for provenance.
 
-Origin is the module outline centre. +Y is:
-  RP2350  -> the PROGRAMMING port end (the proud one)
-  ESP32   -> header J3 (pads 1..19)
+Each footprint is drawn the way its source picture in docs/sources looks, as
+seen in KiCad's footprint editor -- where +X is right and +Y is DOWN:
+
+  RP2350  -> rp2350-usb-c-pinout.png: native USB port (proud) at the top (-Y),
+             5V the top-left pad. Placed on the carrier unrotated.
+  ESP32   -> esp32-dev-kit-drawing.png turned half a turn: antenna at the
+             left (-X), header J3 at the bottom (+Y). Placed turned 180
+             degrees, which makes it the picture again.
+
+The RP2350 pattern was once written with its native port at +Y and pad 1 at
+-X, as if +Y pointed up. That is the mirror image of the real board, and it
+passed every check for five weeks (docs/project-review-2026-11.md #1).
+check_pcb.py now compares the placed board with both pictures.
 """
 import pathlib, re
 
@@ -73,47 +83,52 @@ def rp2350():
     nd, nl, ndep = B["notch_d"], B["notch_len"], B["notch_dep"]
 
     o = hdr("RP2350-USB-C",
-            "Waveshare RP2350-USB-C, castellated, soldered flat. "
-            "+Y is the PROGRAMMING (proud) port end; -Y is the EXPOSED port "
-            "that must meet the enclosure wall.",
+            "Waveshare RP2350-USB-C, castellated, soldered flat. Drawn as "
+            "Waveshare's pinout picture: NATIVE USB port (proud, beside BOOT "
+            "and RST) at the top, -Y; pad 1 (5V) top-left. The PIO-USB port "
+            "(flush, by the notches) is at +Y.",
             "waveshare rp2350 castellated module")
-    # Refdes sits inside the outline: the exposed-port end is flush with the
-    # carrier edge, so anything outside it at -Y is off the board. It is
-    # hidden once the module is fitted, which is fine -- it guides assembly.
-    o.append(text("reference", "REF**", 0, 3.0, SILK))
-    o.append(text("value", "RP2350-USB-C", 0, -3.0, FAB))
+    # Refdes sits inside the outline: the native-port end lies on the
+    # carrier's front edge, so anything outside it there is off the board.
+    # It is hidden once the module is fitted, which is fine -- it guides
+    # assembly.
+    o.append(text("reference", "REF**", 0, -3.0, SILK))
+    o.append(text("value", "RP2350-USB-C", 0, 3.0, FAB))
 
-    # pads: 1..9 left edge from the programming end, 10..18 right edge
-    y0 = hl - first
+    # pads: 1..9 down the LEFT edge from the native-port end, 10..18 down the
+    # RIGHT edge. Left is -X and down is +Y, as on screen.
+    y0 = -hl + first
     for i in range(n):
-        y = y0 - i * pitch
+        y = y0 + i * pitch
         o.append(pad(i + 1, -hw + PAD_IN_OFF, y, PAD_L, PAD_W))
         o.append(pad(n + i + 1, hw - PAD_IN_OFF, y, PAD_L, PAD_W))
 
-    # fab: real outline with the two retention notches cut (port end only)
-    ny1 = -hl + nd
-    ny0 = ny1 + nl
-    o += polyline([(-hw, -hl), (-hw, ny1), (-hw + ndep, ny1),
-                   (-hw + ndep, ny0), (-hw, ny0), (-hw, hl),
-                   (hw, hl), (hw, ny0), (hw - ndep, ny0),
-                   (hw - ndep, ny1), (hw, ny1), (hw, -hl), (-hw, -hl)], FAB)
-    # USB-C shells on fab: exposed one flush, programming one proud
+    # fab: real outline with the two retention notches cut (PIO-USB end only)
+    ny1 = hl - nd
+    ny0 = ny1 - nl
+    o += polyline([(-hw, hl), (-hw, ny1), (-hw + ndep, ny1),
+                   (-hw + ndep, ny0), (-hw, ny0), (-hw, -hl),
+                   (hw, -hl), (hw, ny0), (hw - ndep, ny0),
+                   (hw - ndep, ny1), (hw, ny1), (hw, hl), (-hw, hl)], FAB)
+    # USB-C shells on fab: the native one proud, the PIO-USB one flush.
+    # (boards.scad still calls them "in" and "out", from the enclosure that
+    # had the PIO-USB port at the wall.)
     uw, ud = B["usb_w"] / 2, B["usb_depth"]
-    o += rect(-uw, -hl - B["usb_over_out"], uw, -hl - B["usb_over_out"] + ud, FAB)
-    o += rect(-uw, hl + B["usb_over_in"], uw, hl + B["usb_over_in"] - ud, FAB)
+    o += rect(-uw, -hl - B["usb_over_in"], uw, -hl - B["usb_over_in"] + ud, FAB)
+    o += rect(-uw, hl + B["usb_over_out"] - ud, uw, hl + B["usb_over_out"], FAB)
 
     # silk: short ticks clear of the pads, plus a pin-1 dot. On the carrier
-    # the native (+Y) end sits on the board's front edge, so nothing is drawn
-    # along it; the PIO-USB (-Y) end faces inward and gets the cross line.
+    # the native (-Y) end sits on the board's front edge, so nothing is drawn
+    # along it; the PIO-USB (+Y) end faces inward and gets the cross line.
     for sx in (-1, 1):
-        o.append(line(sx * hw, hl - 0.6, sx * hw, y0 + 1.2, SILK))
-        o.append(line(sx * hw, -hl, sx * hw, ny1 - 0.3, SILK))
-    o.append(line(-hw, -hl, hw, -hl, SILK))
+        o.append(line(sx * hw, -hl + 0.6, sx * hw, y0 - 1.2, SILK))
+        o.append(line(sx * hw, hl, sx * hw, ny1 + 0.3, SILK))
+    o.append(line(-hw, hl, hw, hl, SILK))
     # pin-1 dot inside the outline beside pad 1: outside it, it landed on
     # whatever part sat next to the module
-    o.append(circle(-hw + 0.9, hl - 1.0, 0.25, SILK))
-    o += rect(-hw - PAD_OUT - 0.5, -hl - B["usb_over_out"] - 0.25,
-              hw + PAD_OUT + 0.5, hl + B["usb_over_in"] + 0.25, CRT, 0.05)
+    o.append(circle(-hw + 0.9, -hl + 1.0, 0.25, SILK))
+    o += rect(-hw - PAD_OUT - 0.5, -hl - B["usb_over_in"] - 0.25,
+              hw + PAD_OUT + 0.5, hl + B["usb_over_out"] + 0.25, CRT, 0.05)
     o.append(")")
     return "\n".join(o)
 

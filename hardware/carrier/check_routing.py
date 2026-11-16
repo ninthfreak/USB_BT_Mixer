@@ -14,8 +14,14 @@ tracks route.py actually laid and checks what the rules alone would pass:
   4. the layout rule (gen_pcb.py): every signal stays on the top layer --
      no signal track on B.Cu and no signal via. Only power runs on the
      bottom, and the only vias are ground's
+  5. the plane is one piece where it matters: each input board's ground via
+     reaches both of the ESP32's ground vias through pour at least 2 mm wide
+     all the way. Fill percentage (3) cannot see this: the rail once ran
+     between the boards' ground pads and the rest of the plane, leaving two
+     0.5 mm slivers as their only ground, at 89 % fill and a clean DRC
+     (docs/project-review-2026-11.md #2)
 """
-import collections, pathlib, sys
+import collections, math, pathlib, sys
 import pcbnew
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -31,6 +37,61 @@ CHAINS = {"BCLK to in 1": ("BCLK", "BCLK1"), "BCLK to in 2": ("BCLK", "BCLK2"),
           "AUD1": ("AUD1",), "AUD2": ("AUD2",)}
 B_FILL_MIN = 0.80
 GND = "GND"
+GND_NECK_MIN = 2.0                  # mm of pour, module ground to ESP32 ground
+GND_PADS = {"U1": ["2"], "U2": ["2"], "U3": ["14", "26"]}
+PM = pcbnew.SHAPE_POLY_SET.PM_STRICTLY_SIMPLE
+
+
+def P(x, y): return pcbnew.VECTOR2I(pcbnew.FromMM(float(x)), pcbnew.FromMM(float(y)))
+
+
+def ground_vias(b):
+    """ref -> [(x, y)]: for each module ground pad, the nearest GND via."""
+    vias = [(MM(t.GetPosition().x), MM(t.GetPosition().y)) for t in b.GetTracks()
+            if t.GetClass() == "PCB_VIA" and t.GetNetname() == GND]
+    out = {}
+    for fp in b.GetFootprints():
+        for pad in fp.Pads():
+            if pad.GetNumber() in GND_PADS.get(fp.GetReference(), ()):
+                x, y = MM(pad.GetPosition().x), MM(pad.GetPosition().y)
+                d, v = min((math.hypot(vx - x, vy - y), (vx, vy)) for vx, vy in vias) if vias else (99, None)
+                if d <= 3.0:
+                    out.setdefault(fp.GetReference(), []).append(v)
+    return out
+
+
+def pieces_near(full, eroded, x, y, reach):
+    """The pieces of the eroded pour that (x, y) sits on: any piece a straight
+    line of at most `reach` from the point gets to without leaving copper.
+    (A via beside a track is closer to the pour's edge than the erosion.)"""
+    out = set()
+    for i in range(int(reach / 0.1) + 1):
+        for a in range(0, 360, 10):
+            px = x + i * 0.1 * math.cos(math.radians(a))
+            py = y + i * 0.1 * math.sin(math.radians(a))
+            if all(full.Contains(P(x + (px - x) * t / 20, y + (py - y) * t / 20)) for t in range(21)):
+                out |= {k for k in range(eroded.OutlineCount()) if eroded.Contains(P(px, py), k)}
+    return out
+
+
+def ground_necks(b, width):
+    """Pairs (input board, ESP32 via) NOT joined by pour at least `width` wide."""
+    z = [z for z in b.Zones() if not z.GetIsRuleArea() and z.IsOnLayer(pcbnew.B_Cu)][0]
+    full = pcbnew.SHAPE_POLY_SET(z.GetFilledPolysList(pcbnew.B_Cu))
+    full.Unfracture(PM)                     # KiCad stores fills with keyhole slits
+    eroded = pcbnew.SHAPE_POLY_SET(full)
+    eroded.Deflate(pcbnew.FromMM(width / 2), 32)
+    eroded.Simplify(PM)
+    gv = ground_vias(b)
+    bad = [f"{ref}: no ground via within 3 mm of its GND pad" for ref in GND_PADS if not gv.get(ref)]
+    near = lambda v: pieces_near(full, eroded, v[0], v[1], width / 2 + 0.7)
+    for ref in ("U1", "U2"):
+        for v in gv.get(ref, []):
+            for e in gv.get("U3", []):
+                if not near(v) & near(e):
+                    bad.append(f"{ref} ground via ({v[0]:.1f}, {v[1]:.1f}) to the ESP32's at "
+                               f"({e[0]:.1f}, {e[1]:.1f}): pour narrower than {width} mm on the way")
+    return bad, gv
 
 def main():
     b = pcbnew.LoadBoard(str(HERE / "carrier.kicad_pcb"))
@@ -84,12 +145,18 @@ def main():
     for n, k in sig_vias.items():
         fails.append(f"{n}: {k} via(s) (signals never change layer)")
 
+    necks, gv = ground_necks(b, GND_NECK_MIN)
+    print(f"ground path, each input board's via to the ESP32's {len(gv.get('U3', []))} vias, "
+          f"at least {GND_NECK_MIN} mm of pour: {'ok' if not necks else 'NO'}")
+    fails += necks
+
     if fails:
         print("\nFAIL")
         for f in fails:
             print("  -", f)
         sys.exit(1)
-    print("\nOK: power nets full width, I2S within budget, bottom pour solid, every signal on top")
+    print("\nOK: power nets full width, I2S within budget, bottom pour solid and in one piece "
+          "between the modules, every signal on top")
 
 if __name__ == "__main__":
     main()

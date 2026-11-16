@@ -10,7 +10,6 @@ import netlist as N
 
 GROUPS = [
     ("Power", ["VBUS1", "VBUS2", "RAIL", "GND"]),
-    ("Chain input, held low by a pull-down (omit it to free the pin)", ["GP29_1", "GP29_2"]),
     ("I2S clocks (ESP32 is master)", ["BCLK", "BCLK1", "BCLK2", "LRCK", "LRCK1", "LRCK2"]),
     ("I2S audio (returns to the ESP32)", ["AUD1", "AUD2"]),
     ("UART, one pair per input board", ["U1_TX", "ESP_TX1", "U1_RX",
@@ -63,10 +62,11 @@ def main():
           "Only the pads that carry a net, plus a few corners so a module",
           "cannot peel from one end. Everything else is left bare: the land",
           "pattern is there if you ever want it.", "",
-          "The port end of each input board has **no pads at all** -- the",
-          "nearest joint is 9.8 mm from the USB-C shell -- so plug forces were",
-          "never going to be held by solder. The enclosure has to take that",
-          "load, as the current lid's press posts do.", ""]
+          "Each input board's first pads (5V and GP0) are 2.9 mm from its",
+          "native USB-C shell, so those joints see some of a cable's leverage.",
+          "Solder is still the wrong thing to hold a plug: the enclosure must",
+          "bear on the modules near the port.", "",
+          "`carrier-fit-check.pdf` shows the same map at 1:1.", ""]
     tot_s = tot_a = 0
     for ref in ("U1", "U2", "U3"):
         allp = pads[ref]

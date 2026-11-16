@@ -13,9 +13,13 @@ the 305 bookkeeping violations the old file produced.
 
 Frame: origin at the carrier's front-left corner, +X right, +Y back (KiCad
 draws +Y downward, so the front edge is at the TOP of the view). y = 0 is the
-port wall. Each input board is turned 180 degrees so its NATIVE USB port (the
-"programming" port, proud of the board edge) faces the hosts and hangs over
-that edge; its PIO-USB port faces inward, unused (review-notes #25).
+port wall. Each input board sits exactly as in Waveshare's pinout picture
+(docs/sources/rp2350-usb-c-pinout.png): NATIVE USB port (the "programming"
+port, proud of the board edge) toward the hosts and hanging over the front
+edge, 5V at its front-left corner; its PIO-USB port faces inward, unused
+(review-notes #25). The ESP32 sits as in its drawing (USB-C left, antenna
+right, header J3 toward the input boards). check_pcb.py holds the placed
+board against both pictures.
 
 Layout rules, so the board reads the way it works (owner, 2026-10-27):
   * top layer: every signal; no signal changes layer
@@ -48,10 +52,11 @@ def V(x, y): return pcbnew.VECTOR2I(mm(x), mm(y))
 W = 70.0
 
 RP_HL = B["board_l"] / 2
-RP_COURT = RP_HL + B["usb_over_in"] + 0.25      # courtyard past the module centre, +Y
+RP_COURT = RP_HL + B["usb_over_in"] + 0.25
 # The strip and the ESP32's position below were sized when the native port
-# faced inward (RP_COURT behind the module). Kept: the rotated boards leave
-# the strip 1 mm deeper, and the owner accepted the 70 x 79.6 outline.
+# faced inward (RP_COURT behind the module). Kept: with the native port at
+# the front the strip is 1 mm deeper, and the owner accepted the 70 x 79.6
+# outline.
 
 # ESP32: turned 180 deg so header J3 (power + I2S) faces the input boards.
 # Its USB-C end overhangs the LEFT edge by 1 mm so a flashing cable's overmold
@@ -80,32 +85,33 @@ H = round(MH_REAR + 1.35 + 1.6, 1)                # 1.6 mm FR4 web behind the ho
 
 OUTLINE = [(0, 0), (W, 0), (W, Y_STEP), (X_NOTCH, Y_STEP), (X_NOTCH, H), (0, H)]
 
-MODULES = {"U1": (17.55, RP_HL, 180), "U2": (52.45, RP_HL, 180),
+MODULES = {"U1": (17.55, RP_HL, 0), "U2": (52.45, RP_HL, 0),
            "U3": (ESP_CX, ESP_CY, 180)}
 
 # Everything else is placed by PAD 1 position (x, y, rotation), laid out by
-# signal flow. Seen from the ESP32, west to east the board carries: input 1's
-# UART pair, input 1's I2S group, input 2's UART pair, input 2's I2S group.
-# Input 2's clock branches cross its UART pair by passing between the pads of
-# R2 and R4, so no signal needs the bottom layer.
+# signal flow. Each input board has power and I2S down its LEFT edge and the
+# UART and debug pins down its RIGHT edge. Seen from the ESP32, west to east:
+#   input 1's I2S    out of its left edge, down the left margin
+#   input 1's UART   out of its right edge, down the channel
+#   input 2's I2S    from its left edge, back under the board
+#   input 2's UART   from its right edge, back under the board
+# and the ESP32's pins are chosen in that order (netlist.py), so no signal
+# needs the bottom layer.
 PLACE_PAD = {
-    # Strip, west end: rail bulk and bypass at the ESP32's 5V pad; test points.
-    "C1": (2.15, 38.7, 0), "C2": (7.7, 40.7, 90),
-    "TP1": (5.0, 33.0, 0), "TP2": (5.0, 30.0, 0),
-    # Strip: input 1's clock resistors, standing, inline on their lanes.
-    "R3": (20.82, 40.3, 90), "R1": (25.9, 40.3, 90),
-    # Strip: input 2's clock resistors, lying across input 2's UART lanes.
-    "R4": (35.5, 35.8, 0), "R2": (32.3, 38.8, 0),
-    # Channel, front: input 1's supply diode and bypass at its power pads.
-    "D1": (37.4, 2.4, 180), "C3": (34.4, 6.4, 180),
-    # Channel: input 1's GP29 pull-down, debug header, input 2's RX resistor.
-    "R8": (29.6, 11.6, 270), "J1": (34.5, 11.0, 0), "R6": (40.5, 30.0, 90),
-    # Right margin: input 2's supply diode and bypass at its power pads.
-    "D2": (68.0, 8.0, 270), "C4": (68.0, 18.3, 270),
-    # Behind input 2: its GP29 and audio pull-downs, fed down the margin.
-    "R9": (60.3, 35.0, 0), "R7": (60.3, 38.2, 0),
-    # Behind the ESP32: input 1's RX resistor, at the ESP32's TX pin.
-    "R5": (17.5, 75.6, 180),
+    # Left margin: input 1's supply diode and bleed at its 5V pad, then the
+    # rail test points, the rail bulk cap at the ESP32's 5V pad.
+    "D1": (3.5, 8.2, 270), "R10": (3.5, 18.6, 270),
+    "TP2": (2.6, 31.3, 0), "TP1": (2.6, 34.3, 0),
+    "C1": (2.15, 38.7, 0),
+    # Strip: the six series resistors, standing, each on its lane at the
+    # ESP32 pin (or gap) it serves. R5 and R2 sit half a millimetre off their
+    # pins so that neighbours' courtyards clear.
+    "R3": (20.82, 40.3, 90), "R1": (25.9, 40.3, 90), "R5": (28.95, 40.3, 90),
+    "R2": (33.0, 40.3, 90), "R4": (36.06, 40.3, 90), "R6": (42.41, 40.3, 90),
+    # Channel, front: input 2's supply diode and bleed at its 5V pad.
+    "D2": (32.58, 2.4, 0), "R11": (40.2, 6.2, 270),
+    # A debug header beside each input board's GP3.
+    "J1": (31.5, 8.0, 0), "J2": (64.65, 7.96, 0),
 }
 MOUNT = [(3.0, 3.0), (W - 3.0, 3.0), (3.0, MH_REAR), (X_NOTCH - 3.0, MH_REAR)]
 MOUNT_FP = "MountingHole:MountingHole_2.7mm_M2.5"
@@ -225,10 +231,11 @@ def main():
         kind = N.PARTS.get(ref, {}).get("kind")
         r = fp.Reference()
         if kind in ("r", "c", "d") and "Vertical" in N.FOOTPRINTS[ref]:
-            # standing resistor: the body is a circle over pad 1; label beside it
-            p1 = [q for q in fp.Pads() if q.GetNumber() == "1"][0].GetPosition()
-            r.SetPosition(V(MM(p1.x) - 2.2, MM(p1.y) - 1.27))
-            r.SetTextAngleDegrees(90)
+            # standing resistor: the body is a circle over pad 1; label it
+            # beyond pad 2, clear of the neighbours standing beside it
+            p1, p2 = [[q for q in fp.Pads() if q.GetNumber() == n][0].GetPosition() for n in "12"]
+            r.SetPosition(V(MM(p2.x) + (MM(p2.x) - MM(p1.x)) * 0.67, MM(p2.y) + (MM(p2.y) - MM(p1.y)) * 0.67))
+            r.SetTextAngleDegrees(0)
         elif kind in ("r", "c", "d"):
             pads = list(fp.Pads())
             mx = (pads[0].GetPosition().x + pads[1].GetPosition().x) // 2
@@ -242,14 +249,14 @@ def main():
             for g in fp.GraphicalItems():
                 if g.GetClass() in ("MTEXT", "FP_TEXT", "PCB_TEXT") and g.GetText() == "K":
                     t = g.GetPosition()
-                    if MM(t.x) > W - 1.0 or MM(t.x) < 1.0:
+                    if MM(t.x) > W - 1.0 or MM(t.x) < 1.0 or MM(t.y) < 1.0:
                         g.SetPosition(pcbnew.VECTOR2I(2 * p1.x - t.x, 2 * p1.y - t.y))
         elif kind == "cpol":
             # The can's outline and its negative-side hatching leave no room
-            # for the refdes inside; it is labelled just below instead.
+            # for the refdes inside; it is labelled beside it instead.
             r.SetVisible(False)
             c = fp.GetPosition()
-            text(board, ref, MM(c.x) + 1.25, MM(c.y) - 3.6, 0.8)
+            text(board, ref, MM(c.x) + 4.9, MM(c.y), 0.8)
         elif kind in ("tp", "hdr"):
             r.SetVisible(False)
         if kind in ("r", "c", "d"):
@@ -269,13 +276,21 @@ def main():
     zone(board, KEEPOUT, pcbnew.F_Cu, rule=True, name="ANTENNA KEEPOUT")
 
     # Labels the builder and the debugger will want.
-    text(board, "RAIL", 6.4, 33.0, 0.8, just="left")
-    text(board, "GND", 3.6, 30.0, 0.8, just="right")
-    for i, lab in enumerate(["G", "D1", "D2"]):
-        text(board, lab, 32.9, 11.0 + i * 2.54, 0.8, just="right")
-    text(board, "IN 1", 17.55, 27.5, 1.0)
-    text(board, "IN 2", 52.45, 27.5, 1.0)
-    text(board, "USB_BT_Mixer v0.3", 63.6, 41.0, 0.8)
+    tp = {r: fp.GetPosition() for fp in board.GetFootprints()
+          for r in [fp.GetReference()] if r in ("TP1", "TP2", "J1", "J2")}
+    text(board, "RAIL", MM(tp["TP1"].x) + 1.5, MM(tp["TP1"].y), 0.8, just="left")
+    text(board, "GND", MM(tp["TP2"].x) + 1.5, MM(tp["TP2"].y) - 1.3, 0.8, just="left")
+    # "DBG", not "D": D1 and D2 are the diodes
+    for ref, name in (("J1", "DBG1"), ("J2", "DBG2")):
+        for i, lab in enumerate(["GND", name]):
+            text(board, lab, MM(tp[ref].x) + 1.8, MM(tp[ref].y) + i * 2.54, 0.8, just="left")
+    # Inside each input board's outline: which board, and where its 5V pad
+    # goes. Hidden once the module is fitted; they are for the bare board.
+    for ref, lab in (("U1", "IN 1"), ("U2", "IN 2")):
+        cx = MODULES[ref][0]
+        text(board, lab, cx, 27.5, 1.0)
+        text(board, "5V", cx - B["board_w"] / 2 + 3.3, B["pad_first"], 0.8)
+    text(board, "USB_BT_Mixer v0.4", 60.0, 38.0, 0.8)
     text(board, "ANTENNA OVERHANGS HERE", X_NOTCH - 1.2, (Y_STEP + H) / 2,
          0.8, layer=pcbnew.Cmts_User, rot=90)
 

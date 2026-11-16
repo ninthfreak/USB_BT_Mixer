@@ -41,21 +41,25 @@ def main():
     fails = []
     off = 3.00 / 2 - 1.10          # PAD_L/2 - PAD_OUT, from gen_fp.py
 
-    # ── RP2350: 9 pads per long edge, first 2.88 from the PROGRAMMING end ──
+    # ── RP2350: 9 pads per long edge, first 2.88 from the NATIVE-port end.
+    # Drawn as Waveshare's picture: native port at -Y (up on screen), pads
+    # 1..9 down the left edge. This recomputes positions from the same
+    # convention as gen_fp.py, so it cannot catch a mirrored pattern;
+    # check_pcb.py does that, against the pictures in docs/sources. ──
     p = pads("RP2350-USB-C")
     hw, hl = B["board_w"] / 2, B["board_l"] / 2
     n, pitch, first = int(B["pad_count"]), B["pad_pitch"], B["pad_first"]
     if len(p) != 2 * n:
         fails.append(f"RP2350: {len(p)} pads, expected {2*n}")
     for i in range(n):
-        y = (hl - first) - i * pitch
+        y = (-hl + first) + i * pitch
         for num, x in ((i + 1, -hw + off), (n + i + 1, hw - off)):
             gx, gy = p.get(num, (None, None))
             if gx is None or not (near(gx, x) and near(gy, y)):
                 fails.append(f"RP2350 pad {num}: {(gx,gy)} != {(round(x,3),round(y,3))}")
     # the far pad must land where boards.scad says the row ends
-    if p and not near(p[n][1], hl - B["pad_last"]):
-        fails.append(f"RP2350 pad {n} y={p[n][1]} != pad_last {hl - B['pad_last']}")
+    if p and not near(p[n][1], -hl + B["pad_last"]):
+        fails.append(f"RP2350 pad {n} y={p[n][1]} != pad_last {-hl + B['pad_last']}")
 
     # ── ESP32: 19 per row, span 45.72, rows on the long edges ──
     e = pads("ESP32-DEV-KIT")

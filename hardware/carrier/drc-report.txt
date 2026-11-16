@@ -1,73 +1,64 @@
 ** Drc report for /home/user/USB_BT_Mixer/hardware/carrier/carrier.kicad_pcb **
-** Created on 2026-10-27 02:23:43 **
+** Created on 2026-11-16 22:42:57 **
 
-** Found 22 DRC violations **
+** Found 19 DRC violations **
 [lib_footprint_issues]: The current configuration does not include the library 'Capacitor_THT'.
     Local override; Severity: warning
     @(2.1500 mm, 38.7000 mm): Footprint C1
-[lib_footprint_issues]: The current configuration does not include the library 'Resistor_THT'.
+[lib_footprint_issues]: The current configuration does not include the library 'Connector_PinHeader_2.54mm'.
     Local override; Severity: warning
-    @(60.3000 mm, 35.0000 mm): Footprint R9
+    @(64.6500 mm, 7.9600 mm): Footprint J2
+[lib_footprint_issues]: The current configuration does not include the library 'Diode_THT'.
+    Local override; Severity: warning
+    @(32.5800 mm, 2.4000 mm): Footprint D2
 [lib_footprint_issues]: The current configuration does not include the library 'Resistor_THT'.
     Local override; Severity: warning
     @(20.8200 mm, 40.3000 mm): Footprint R3
 [lib_footprint_issues]: The current configuration does not include the library 'Resistor_THT'.
     Local override; Severity: warning
-    @(60.3000 mm, 38.2000 mm): Footprint R7
+    @(33.0000 mm, 40.3000 mm): Footprint R2
+[lib_footprint_issues]: The current configuration does not include the library 'MountingHole'.
+    Local override; Severity: warning
+    @(42.3000 mm, 76.6400 mm): Footprint H4
+[lib_footprint_issues]: The current configuration does not include the library 'TestPoint'.
+    Local override; Severity: warning
+    @(2.6000 mm, 34.3000 mm): Footprint TP1
+[lib_footprint_issues]: The current configuration does not include the library 'Resistor_THT'.
+    Local override; Severity: warning
+    @(42.4100 mm, 40.3000 mm): Footprint R6
+[lib_footprint_issues]: The current configuration does not include the library 'Resistor_THT'.
+    Local override; Severity: warning
+    @(40.2000 mm, 6.2000 mm): Footprint R11
+[lib_footprint_issues]: The current configuration does not include the library 'Connector_PinHeader_2.54mm'.
+    Local override; Severity: warning
+    @(31.5000 mm, 8.0000 mm): Footprint J1
+[lib_footprint_issues]: The current configuration does not include the library 'TestPoint'.
+    Local override; Severity: warning
+    @(2.6000 mm, 31.3000 mm): Footprint TP2
+[lib_footprint_issues]: The current configuration does not include the library 'MountingHole'.
+    Local override; Severity: warning
+    @(3.0000 mm, 76.6400 mm): Footprint H3
 [lib_footprint_issues]: The current configuration does not include the library 'MountingHole'.
     Local override; Severity: warning
     @(3.0000 mm, 3.0000 mm): Footprint H1
 [lib_footprint_issues]: The current configuration does not include the library 'Resistor_THT'.
     Local override; Severity: warning
-    @(29.6000 mm, 11.6000 mm): Footprint R8
-[lib_footprint_issues]: The current configuration does not include the library 'Capacitor_THT'.
-    Local override; Severity: warning
-    @(34.4000 mm, 6.4000 mm): Footprint C3
-[lib_footprint_issues]: The current configuration does not include the library 'TestPoint'.
-    Local override; Severity: warning
-    @(5.0000 mm, 33.0000 mm): Footprint TP1
-[lib_footprint_issues]: The current configuration does not include the library 'Resistor_THT'.
-    Local override; Severity: warning
-    @(32.3000 mm, 38.8000 mm): Footprint R2
-[lib_footprint_issues]: The current configuration does not include the library 'MountingHole'.
-    Local override; Severity: warning
-    @(42.3000 mm, 76.6400 mm): Footprint H4
-[lib_footprint_issues]: The current configuration does not include the library 'Resistor_THT'.
-    Local override; Severity: warning
-    @(40.5000 mm, 30.0000 mm): Footprint R6
-[lib_footprint_issues]: The current configuration does not include the library 'Connector_PinHeader_2.54mm'.
-    Local override; Severity: warning
-    @(34.5000 mm, 11.0000 mm): Footprint J1
-[lib_footprint_issues]: The current configuration does not include the library 'Diode_THT'.
-    Local override; Severity: warning
-    @(68.0000 mm, 8.0000 mm): Footprint D2
-[lib_footprint_issues]: The current configuration does not include the library 'MountingHole'.
-    Local override; Severity: warning
-    @(67.0000 mm, 3.0000 mm): Footprint H2
-[lib_footprint_issues]: The current configuration does not include the library 'Diode_THT'.
-    Local override; Severity: warning
-    @(37.4000 mm, 2.4000 mm): Footprint D1
-[lib_footprint_issues]: The current configuration does not include the library 'Capacitor_THT'.
-    Local override; Severity: warning
-    @(7.7000 mm, 40.7000 mm): Footprint C2
+    @(3.5000 mm, 18.6000 mm): Footprint R10
 [lib_footprint_issues]: The current configuration does not include the library 'Resistor_THT'.
     Local override; Severity: warning
     @(25.9000 mm, 40.3000 mm): Footprint R1
-[lib_footprint_issues]: The current configuration does not include the library 'Resistor_THT'.
+[lib_footprint_issues]: The current configuration does not include the library 'Diode_THT'.
     Local override; Severity: warning
-    @(35.5000 mm, 35.8000 mm): Footprint R4
-[lib_footprint_issues]: The current configuration does not include the library 'Capacitor_THT'.
-    Local override; Severity: warning
-    @(68.0000 mm, 18.3000 mm): Footprint C4
+    @(3.5000 mm, 8.2000 mm): Footprint D1
 [lib_footprint_issues]: The current configuration does not include the library 'MountingHole'.
     Local override; Severity: warning
-    @(3.0000 mm, 76.6400 mm): Footprint H3
+    @(67.0000 mm, 3.0000 mm): Footprint H2
 [lib_footprint_issues]: The current configuration does not include the library 'Resistor_THT'.
     Local override; Severity: warning
-    @(17.5000 mm, 75.6000 mm): Footprint R5
-[lib_footprint_issues]: The current configuration does not include the library 'TestPoint'.
+    @(36.0600 mm, 40.3000 mm): Footprint R4
+[lib_footprint_issues]: The current configuration does not include the library 'Resistor_THT'.
     Local override; Severity: warning
-    @(5.0000 mm, 30.0000 mm): Footprint TP2
+    @(28.9500 mm, 40.3000 mm): Footprint R5
 
 ** Found 0 unconnected pads **
 

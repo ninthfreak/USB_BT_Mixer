@@ -11,6 +11,7 @@ Replaces the earlier RP2040-chain pin map and `docs/HANDOFF.md` §4. Board decis
 **Changes:**
 - **2026-10-26 (carrier audit):** series resistors raised to 1 kΩ and added on UART TX, pull-downs added, loop-backs moved off GPIO36/39 (`hardware/carrier/AUDIT.md`).
 - **2026-10-27:** the input boards turn round so their **native USB port faces the hosts** (review-notes #25), and the ESP32 pins were re-chosen so the carrier routes on one layer. The hand-wired guide (`hardware/wiring-guide.html`) predates this and is marked out of date.
+- **2026-11-16 (project review):** the carrier's input-board land pattern was the mirror image of the real board; corrected, and the ESP32 pins re-chosen for the true geometry. Clocks moved to **GP9/GP10** on the input boards. Bleed resistors added on each VBUS; six unneeded passives removed (`docs/project-review-2026-11.md`).
 
 ```
                      BCLK, LRCK (ESP32 is clock master)
@@ -30,7 +31,7 @@ Replaces the earlier RP2040-chain pin map and `docs/HANDOFF.md` §4. Board decis
 - The original ESP32 has **two I2S peripherals, each with one data input** in standard mode (TDM support on the original ESP32 is unlikely, ~75% confident).
 - **I2S0** runs as **master**: it generates BCLK/LRCK and receives input 1.
 - **I2S1** runs as **slave** on the same clocks and receives input 2.
-- BCLK and LRCK are **wired back into two spare GPIOs** for I2S1 (BCLK: GPIO26 → GPIO25; LRCK: GPIO14 → GPIO33). Routing them internally is probably possible too (~70% confident), but a physical loop-back removes that uncertainty for the cost of two otherwise-idle pins.
+- BCLK and LRCK are **wired back into two spare GPIOs** for I2S1 (BCLK: GPIO26 → GPIO32; LRCK: GPIO14 → GPIO35). Routing them internally is probably possible too (~70% confident), but a physical loop-back removes that uncertainty for the cost of two otherwise-idle pins.
 - Which pin of each pair is the output and which the loop-back input is firmware's choice; the table below is the recommended one. I2S signals go through the ESP32's GPIO matrix, so any of these pins can carry them.
 
 ## ESP32 board pins (Waveshare ESP32-DEV-KIT-WROOM-32E-N4)
@@ -41,18 +42,20 @@ From Waveshare's schematic `ESP32-DEV-KIT-XX.pdf` (Altium, dated 2026-09-09). He
 |---|---|---|---|---|
 | BCLK out (I2S0 master) | 26 | J3 | Out | Through 1 kΩ to each input board (R1, R2) |
 | LRCK out (I2S0 master) | 14 | J3 | Out | Through 1 kΩ to each input board (R3, R4). GPIO14 is a JTAG pin some sources say emits PWM at boot; harmless on a clock output |
-| BCLK loop-back in (I2S1 slave) | 25 | J3 | In | Linked to GPIO26 (neighbouring pin), before the resistors |
-| LRCK loop-back in (I2S1 slave) | 33 | J3 | In | Linked to GPIO14, before the resistors |
-| Data in from input 1 (I2S0) | 13 | J3 | In | Enable the internal pull-down in firmware. GPIO13 is also JTAG MTCK; only matters if JTAG is wanted |
-| Data in from input 2 (I2S1) | 35 | J3 | In (input-only pin) | 100 kΩ pull-down (R7): no internal pull on this pin |
-| UART1 TX → input 1 RX | 4 | J4 | Out | Through 1 kΩ (R5) |
-| UART1 RX ← input 1 TX | 16 | J4 | In | |
+| BCLK loop-back in (I2S1 slave) | 32 | J3 | In | Linked to GPIO26 under the ESP32, before the resistors |
+| LRCK loop-back in (I2S1 slave) | 35 | J3 | In (input-only pin) | Linked to GPIO14 under the ESP32, before the resistors. Always driven, so its lack of a pull does not matter |
+| Data in from input 1 (I2S0) | 13 | J3 | In | **Firmware: enable the internal pull-down.** GPIO13 is also JTAG MTCK; only matters if JTAG is wanted |
+| Data in from input 2 (I2S1) | 18 | J4 | In | **Firmware: enable the internal pull-down** |
+| UART1 TX → input 1 RX | 25 | J3 | Out | Through 1 kΩ (R5) |
+| UART1 RX ← input 1 TX | 33 | J3 | In | **Firmware: enable the internal pull-up** |
 | UART2 TX → input 2 RX | 21 | J4 | Out | Through 1 kΩ (R6) |
-| UART2 RX ← input 2 TX | 19 | J4 | In | |
+| UART2 RX ← input 2 TX | 19 | J4 | In | **Firmware: enable the internal pull-up** |
 | Power in | `5V` (net VSYS) | J3 pin 19 | — | From the shared rail. See **Power** below |
 | Ground | GND | J3 / J4 | — | |
 
-All I2S signals land on J3 and both UARTs on J4. On the carrier the pins are ordered so that, west to east, they meet input 1's UART, input 1's I2S, input 2's UART, input 2's I2S, and the two loop-backs nest instead of crossing. That is what lets every signal stay on one layer (`hardware/carrier/gen_pcb.py`).
+Spare: GPIO4, 16, 17, 22.
+
+**Why these pins.** They are chosen for the carrier's layout. Along the ESP32's front row (J3), from its USB-C end to its antenna end: input 1's audio (13), LRCK out (14), BCLK out (26), input 1's UART (25, 33), BCLK in (32), LRCK in (35). The clocks' output pins face input 1 and their loop-back pins face input 2, so the two links under the ESP32 nest instead of crossing. Input 2's audio and UART pass between the pads east of GPIO35 to the rear row (J4). That is what lets every signal stay on one layer (`hardware/carrier/README.md`).
 
 **Pins deliberately avoided on this board:**
 
@@ -66,12 +69,11 @@ All I2S signals land on J3 and both UARTs on J4. On the carrier the pins are ord
 | TXD0 / RXD0 | Console UART to the CH343P USB-serial chip; keep free for logs and flashing |
 | SD0–SD3, CMD, CLK | Module flash |
 
-**Not every board is always powered.** With only one host connected, that input board and the ESP32 run (through its diode), but the other input board is unpowered: its diode stops the rail reaching it, by design. Two consequences, both handled:
+**Not every board is always powered.** With only one host connected, that input board and the ESP32 run (through its diode), but the other input board is unpowered: its diode stops the rail reaching it, by design. Three consequences, all handled:
 
-- **Back-feed.** The ESP32 keeps driving BCLK, LRCK and UART TX into the unpowered board. Without limiting, current flows through that chip's ESD diodes into its dead 3V3 rail. The 1 kΩ series resistors cut this to about 3 mA per pin. At 2.8 MHz with ~10 pF of load, 1 kΩ still gives ~22 ns edges against a 177 ns half-period. (~90% confident in the mechanism; the RP2350's exact injection limit is not verified.)
-- **Floating data inputs.** The unpowered board's DOUT floats. GPIO35 (input 2) is input-only with no internal pull, so it gets a 100 kΩ pull-down; GPIO13 (input 1) can use its internal one.
-
-GPIO16 is free for UART1: the schematic names U1 as **ESP32-WROOM-32E-N4** (no PSRAM, so nothing claims GPIO16/17), and it appears on J4 with nothing else attached. ~95% confident; the remaining doubt is only that I haven't read the module datasheet itself.
+- **Back-feed.** The ESP32 keeps driving BCLK, LRCK and UART TX into the unpowered board. Those lines land on GP9, GP10 and GP5, which are the RP2350's **fault-tolerant** pads: with the chip unpowered, "very little current flows into the pin whilst it is below 3.63 V" (RP2350 datasheet; sourced, not read directly). The four ADC-capable pads, GP26–GP29, are different: they have a diode to the board's 3V3 rail, and a clock driven into one would power the dead board through the pin. That is where the clocks were until 2026-11-16 (`docs/project-review-2026-11.md` #3). ~85 % confident in the pad behaviour; a five-minute bench test settles it.
+- **Floating outputs.** The unpowered board's DOUT and UART TX float. Firmware switches on the ESP32's pull-downs on the two audio inputs and pull-ups on the two UART RX pins, and mutes an input whose board is not answering.
+- **Leakage into its VBUS.** The unpowered board's diode leaks a little of the rail back into that board's VBUS. A USB-C host will not switch a port on until VBUS is under 0.8 V, so each VBUS has a 1 kΩ bleed to ground (R10, R11; review #4).
 
 ## Input board pins (Waveshare RP2350-USB-C, identical on both)
 
@@ -79,22 +81,31 @@ From Waveshare's schematic `RP2350-USB-C.pdf` (github.com/waveshareteam/RP2350-U
 
 **Which USB port is which (owner, boards in hand):** the **internal "programming" port, the one whose shell stands proud of the board edge, is the RP2350's native USB**: the only port its bootloader works on, and the one USB audio needs. The other port, flush with the board edge, is PIO-USB on GPIO12/13. So each board is mounted with the **native port facing the hosts** and the PIO-USB port facing inward, unused (review-notes #25).
 
+**Which edge is which.** Waveshare's pinout picture is `docs/sources/rp2350-usb-c-pinout.png`. Component side up, native port (beside BOOT and RST) at the top:
+
+| Edge | Top to bottom |
+|---|---|
+| **Left** | `5V GND 3V3 29 28 27 26 10 9` |
+| **Right** | `0 1 2 3 4 5 6 7 8` |
+
+So power and I2S leave the **left** edge and the UART and debug pins the **right**. The carrier had this mirrored until 2026-11-16 (review #1).
+
 **Naming:** the schematic calls this net `VSYS`, but **the silkscreen reads `5V`** — and the owner has confirmed the same is true on the ESP32 board. So **both boards are silkscreened `5V`** for what the schematics call VSYS. Below, "the `5V` pin" means that net on either board. It is the raw supply, not regulated 3.3 V.
 
 | Signal | GPIO | Direction | Notes |
 |---|---|---|---|
-| BCLK in | 26 | In | From ESP32 GPIO26 via 1 kΩ |
-| LRCK in | 27 | In | From ESP32 GPIO14 via 1 kΩ |
-| DOUT | 28 | Out | To the ESP32 data-in pin (13 for board 1, 35 for board 2) |
-| DIN (chain input) | 29 | In | For future expansion (another input board or an ADC). Pulled to GND through 4.7 kΩ (R8/R9) until used; leave the resistor out to free the pin |
+| BCLK in | 9 | In | From ESP32 GPIO26 via 1 kΩ. Fault-tolerant pad |
+| LRCK in | 10 | In | From ESP32 GPIO14 via 1 kΩ. Fault-tolerant pad. GP9 and GP10 are consecutive: one PIO input group |
+| DOUT | 28 | Out | To the ESP32 data-in pin (13 for board 1, 18 for board 2) |
 | UART TX | 4 | Out | UART1 TX → the ESP32 UART RX |
-| UART RX | 5 | In | UART1 RX ← the ESP32 UART TX, via 1 kΩ |
-| Debug serial TX (PIO) | 3 | Out | Optional, to a USB-serial adapter |
-| VBUS sense (optional) | any spare (0, 1, 2, 6–10) | In | From the board's `5V` pin via a 10k/20k divider. That pin is raw VBUS here, so no solder jumper is needed. Probably unnecessary |
+| UART RX | 5 | In | UART1 RX ← the ESP32 UART TX, via 1 kΩ. Fault-tolerant pad |
+| Debug serial TX (PIO) | 3 | Out | Optional, to a USB-serial adapter on J1 / J2 |
+| Spare, ADC-capable | 26, 27, 29 | — | Free. Never drive these from the ESP32 (see above). GP29 was a chain input with a pull-down until 2026-11-16; nothing reads it |
+| Spare | 0, 1, 2, 6, 7, 8 | — | Free |
 
 Not on the header, so no conflict: GPIO12/13 (the PIO-USB port, facing inward), GPIO16 (RGB LED).
 
-**Erratum RP2350-E9** (input-mode pull-down latching / leakage) does not apply to the driven pins above. GP29 is the one idle input; its external 4.7 kΩ pull-down holds it low against the erratum's leakage (up to ~120 µA → ~0.56 V). Confirm during bring-up.
+**Erratum RP2350-E9** (input leakage on stepping A2, fixed in A4) does not matter here: every input in use is driven. Waveshare's picture shows an `RP2350A0A4` chip, the fixed stepping; the marking on your own chips will say which you have.
 
 ## Power
 
@@ -102,17 +113,17 @@ Not on the header, so no conflict: GPIO12/13 (the PIO-USB port, facing inward), 
 
 ```
 Host 1 ─USB-C─▶ board 1 `5V` ──▶|── ┐
-                                    ├── shared rail ──▶ ESP32 `5V` pin (J3-19)
+                     │ 1k to GND    ├── shared rail ──▶ ESP32 `5V` pin (J3-19)
 Host 2 ─USB-C─▶ board 2 `5V` ──▶|── ┘
-                (D1, D2: your Schottkys, cathode to the rail)
+                     │ 1k to GND
+                (D1, D2: your Schottkys, cathode to the rail; R10, R11: bleed)
 ```
 
 | From | To |
 |---|---|
-| Input board 1 `5V` pin | D1 anode |
-| Input board 2 `5V` pin | D2 anode |
-| D1 + D2 cathodes | Shared rail → ESP32 `5V` pin (J3-19), 22 µF (C1) + 0.1 µF (C2) near the ESP32 |
-| Each input board's `5V` pin | 0.1 µF to GND (C3, C4), beside the diode |
+| Input board 1 `5V` pin | D1 anode; R10 (1 kΩ) to GND |
+| Input board 2 `5V` pin | D2 anode; R11 (1 kΩ) to GND |
+| D1 + D2 cathodes | Shared rail → ESP32 `5V` pin (J3-19), 22 µF (C1) near the ESP32 |
 | All GND | All GND |
 
 - **Diode orientation matters:** the banded end (cathode) goes to the rail. On the carrier, the band goes on the end with the square pad and the "K" mark. Check with a multimeter's diode range before powering anything.
@@ -121,6 +132,7 @@ Host 2 ─USB-C─▶ board 2 `5V` ──▶|── ┘
 - **The ESP32 board's own USB-C is protected:** its VBUS reaches VSYS through D3 (MBR230, onboard). Plugging a laptop into it for flashing does not back-feed the rail past the input boards' diodes, and the rail does not appear on its USB-C. **You can flash the ESP32 with the box powered.**
 - The ESP32 board's MP1605 converter accepts 2.3–5.5 V in (schematic note), covering the whole rail range with ~0.3 V to spare at the top.
 - The ESP32 board's ETA6098 charger sits on the same VSYS net. With no battery fitted it should stay idle (estimate ~85%; its absolute-maximum ratings are unverified). Never fit a battery to its GH1.25 connector.
+- **The bleed resistors (R10, R11)** hold an input board's VBUS at 0 V while it has no host. Without them the diode's reverse leakage floats it up, and a USB-C host checks VBUS is under 0.8 V before it switches a port on (review #4). Prefer **1N5819** to 1N5817 for the diodes: lower leakage.
 - **The PIO-USB port on each input board is live on that same net.** Anything plugged into it lands on that board's VBUS, on the host side of the diode. Both face inward: leave them unused and unreachable inside the case.
 
 ## Programming with everything soldered
@@ -160,7 +172,7 @@ All verified from the drawing. One unlabelled 1.27 mm dimension near the left ed
 | USB shell height | **MEASURE** (3.26 mm typical) | — |
 | Native-USB shell overhang past the board edge | **MEASURE** (1.00 mm assumed in `boards.scad`; the PIO-USB shell is flush) | — |
 
-**Edge layout:** the `5V`, `GND`, `3V3` and GPIO26–29 pads are all on **one** long edge; GPIO0–10 are on the other. So power and I2S leave one side of the board and the UART leaves the other.
+**Edge layout:** native port up, the **left** edge carries `5V`, `GND`, `3V3`, GPIO29–26, GPIO10, GPIO9 and the **right** edge GPIO0–8 (`docs/sources/rp2350-usb-c-pinout.png`). So power and I2S leave the left side of the board and the UART leaves the right.
 
 ## Mounting
 
@@ -176,15 +188,14 @@ Reference designators match the carrier (`hardware/carrier/CONNECTIONS.md`). All
 
 | Ref | Part | Job |
 |---|---|---|
-| D1, D2 | Schottky, DO-41 (1N5817 / 1N5819) | Each input board's `5V` → rail. SS14 is surface-mount and does not fit the carrier |
+| D1, D2 | Schottky, DO-41 (1N5819 preferred; 1N5817 works) | Each input board's `5V` → rail. SS14 is surface-mount and does not fit the carrier |
 | R1–R4 | 1 kΩ | Series on BCLK and LRCK to each input board, at the ESP32 end |
 | R5, R6 | 1 kΩ | Series on each UART TX (ESP32 → input board) |
-| R7 | 100 kΩ | Pull-down on AUD2 (GPIO35) |
-| R8, R9 | 4.7 kΩ | Pull-down on each input board's GP29. Optional |
+| R10, R11 | 1 kΩ | Bleed, each input board's `5V` pin to GND |
 | C1 | 22 µF ≥ 10 V electrolytic, 5 mm, 2.5 mm pitch | Rail bulk, near the ESP32 |
-| C2 | 0.1 µF ceramic | Rail decoupling at the ESP32 |
-| C3, C4 | 0.1 µF ceramic | Each input board's `5V` pin |
 
-- The loop-backs (GPIO26 → 25, GPIO14 → 33) connect before the resistors, right at the ESP32.
-- On the carrier, R1 and R3 stand upright (2.54 mm pads) to sit inline on their lanes beside the ESP32.
-- Keep I2S runs under ~10 cm. On the carrier the longest chain is under 65 mm.
+Every resistor is 1 kΩ. Retired 2026-11-16 as not needed: R7, R8, R9, C2, C3, C4 (review #5).
+
+- The loop-backs (GPIO26 → 32, GPIO14 → 35) connect before the resistors, under the ESP32.
+- On the carrier, R1–R6 stand upright (2.54 mm pads), each at the ESP32 pin it serves; R10 and R11 lie flat.
+- Keep I2S runs under ~10 cm. On the carrier the longest chain is 73 mm (input 2's audio).

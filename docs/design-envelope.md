@@ -53,7 +53,7 @@ Everything mixed digitally must run on **board A's clock**.
 | Headphone output | Analog line output + headphone amplifier | No | ~3/10 | ~80% | Same as above |
 | Different Bluetooth output stage | Anything that accepts board A's I2S: ESP32 (SBC only), TS3086-based module (if the firmware suits), nRF5340 (LE Audio) | No | 4–8/10 | 30–60% | Firmware and interop; see `viability-review.md` §3b |
 | USB Bluetooth dongle (aptX Adaptive) | Third RP2040 as USB audio **host**; board A's clock trimmed to follow the dongle | No, but A's clock becomes adjustable | 7/10 | ~40% | RP2040 host playback unproven; clock-following loop |
-| Physical volume knob | Potentiometer → a spare analog pin, or a digital encoder | No | 2/10 | ~85% | **Pin conflict:** A0–A3 (the analog pins) are used for I2S in the current pin map |
+| Physical volume knob | Potentiometer → a spare analog pin, or a digital encoder | No | 2/10 | ~85% | Since 2026-11-16 three analog pins are free on each input board (GP26, GP27, GP29); only GP28 is used, for audio out |
 | Status LED | Onboard NeoPixel, **not** red/green-coded | No | 1/10 | ~95% | — |
 
 ---

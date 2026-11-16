@@ -7,7 +7,7 @@ and check_netlist.py verifies the generated schematic matches.
 
 Pin numbering (ours, since we draw both symbol and footprint). Each is
 written against a picture of the real board that is committed in docs/sources,
-because "left" and "right" mean nothing without one: for five weeks the input
+because "left" and "right" mean nothing without one: for three weeks the input
 boards' land pattern was the mirror image of the real board, and every check
 agreed with it (docs/project-review-2026-11.md #1).
 

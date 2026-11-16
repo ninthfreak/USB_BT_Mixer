@@ -77,6 +77,16 @@ pins re-chosen, and every signal now routes on the top layer with the bottom
 a ground plane plus power. The fixes above all carry over; see the README for
 the current board.
 
+### What this audit missed (found 2026-11-16)
+
+The land pattern for both input boards was the **mirror image** of the real
+board, and had been since it was first drawn. This audit checked the pattern
+against `boards.scad` and against KiCad's rendering, but never against a
+picture of the board, because none was in the repo. A second fault was also
+introduced by the 2026-10-27 layout: the rail cut the input boards' ground
+off from the rest of the plane except for two 0.5 mm slivers. Both are fixed;
+see `docs/project-review-2026-11.md` #1 and #2.
+
 ---
 
 ## The original audit

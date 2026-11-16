@@ -432,3 +432,24 @@ front edge; the PIO-USB port faces inward, unused.
 **Confidence:** high that native USB is required for this design; the
 physical identification is the owner's, boards in hand.
 
+## 26. Whole-project review (2026-11-16)
+
+Full record: `docs/project-review-2026-11.md`. What it corrects in the notes
+above and in the design:
+
+| What was wrong | Now |
+|---|---|
+| **The carrier's land pattern for both input boards was the mirror image of the real board** (5V on the right with the native port at the front; Waveshare's picture has it on the left). Fatal; unbuilt, so nothing lost | Pattern redrawn from the picture, board re-laid, and the build compares the placed board with the pictures in `docs/sources/` |
+| The rail on the bottom layer cut the input boards' ground pads off from the plane except for two 0.5 mm slivers | Rail moved; the ground path is measured by the build |
+| #24's fix for back-feed (1 kΩ in series) left the clocks on GP26/GP27, the RP2350's ADC pads, which have a diode to the 3V3 rail | Clocks on GP9/GP10 (fault-tolerant pads) |
+| Nothing drained a host-less input board's VBUS; a USB-C host waits for VBUS under 0.8 V before switching a port on | 1 kΩ bleed on each VBUS (R10, R11) |
+| #20 and #24 justified R8/R9 by erratum E9, and #24 added R7 for GPIO35 | R7–R9 and C2–C4 removed as not needed |
+| `architecture.md`: "No host connected: the input board is still clocked and sends zeros" | False since #24: that board is unpowered. Firmware requirements written down (`architecture.md` §2a) |
+| The hand-wiring guide's figures | Mirrored for both board types (same cause as the first row). Flagged on the guide |
+
+**Process lesson, added to #22's rules.** A dimensioned drawing fixes sizes; it
+does not fix which way round a part is. Any statement with "left", "right",
+"top" or "pin 1" in it must name the committed picture it is read from, and a
+check must compare the built thing with that picture, not with the code that
+drew it. Both pictures were available on 2026-10-11 and 2026-10-26; only one
+was committed.

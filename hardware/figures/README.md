@@ -1,5 +1,7 @@
 # Figure generator for `hardware/wiring-guide.html`
 
+> **These figures are wrong as well as out of date** (found 2026-11-16). `pictorial.py` draws both the input boards and the ESP32 as mirror images of the real boards: compare `docs/sources/rp2350-usb-c-pinout.png` and `esp32-dev-kit-drawing.png`. Do not wire from them. If the hand-wired build is ever revived, redraw them from those pictures first.
+
 The guide's four figures are **pictorials**, not schematics: they draw the real
 boards — PCB outline with the retention notches cut, both USB-C shells, the gold
 castellated pads with their silkscreen numbers, the WROOM module, and component

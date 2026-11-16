@@ -21,7 +21,7 @@ seen in KiCad's footprint editor -- where +X is right and +Y is DOWN:
 
 The RP2350 pattern was once written with its native port at +Y and pad 1 at
 -X, as if +Y pointed up. That is the mirror image of the real board, and it
-passed every check for five weeks (docs/project-review-2026-11.md #1).
+passed every check for three weeks (docs/project-review-2026-11.md #1).
 check_pcb.py now compares the placed board with both pictures.
 """
 import pathlib, re

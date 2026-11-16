@@ -19,6 +19,11 @@ board_r = 2.00;    // corner radius, drawing
 pcb_t   = 1.60;    // MEASURE: PCB thickness
 
 // USB-C receptacles, one at EACH end, both centred across the board.
+// NAMING, since 2026-10-27: "out" and "in" below date from the enclosure that
+// had the flush PIO-USB port at the wall. On the carrier it is the other way
+// round: usb_over_in is the NATIVE port's overhang, and that port now faces
+// OUT, through the wall. Rename both when the carrier enclosure is designed.
+// Which end is which: docs/sources/rp2350-usb-c-pinout.png.
 usb_w    = 8.90;   // shell width: board_w - 2*4.30, from the drawing
 usb_h    = 3.26;   // MEASURE: shell height
 usb_cx   = board_w / 2;

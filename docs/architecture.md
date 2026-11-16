@@ -2,7 +2,7 @@
 
 How the box works end to end. This is the single reference for firmware work. Decisions behind it are in `docs/decisions.md`; pins are in `hardware/wiring.md`.
 
-**Status:** agreed design (2026-09-28; boards changed 2026-09-29). Nothing is built or tested yet.
+**Status:** agreed design (2026-09-28; boards changed 2026-09-29; pins and firmware requirements updated 2026-11-16). Nothing is built or tested yet.
 
 ```
                 ┌────────────── RP2350-USB-C (×2, identical) ─────────────────┐
@@ -40,7 +40,21 @@ How the box works end to end. This is the single reference for firmware work. De
 - TinyUSB's feedback endpoint reports the FIFO level to the host, which then adjusts its sending rate. Each host ends up locked to the ESP32's clock.
 - The Bluetooth stack runs on the same ESP32 crystal.
 
-**No host connected:** the input board is still clocked and sends zeros. That input simply contributes silence.
+**No host connected:** that input board has **no power at all**: each board runs only from its own host, and its diode keeps the rail out. Its audio and UART lines float. The ESP32 must make that silence, not noise: see §2a.
+
+## 2a. What firmware must do that no part does
+
+Found in the 2026-11-16 review (`docs/project-review-2026-11.md` #6). The board is designed on the assumption that firmware does all five.
+
+| # | Requirement | Where | Why |
+|---|---|---|---|
+| a | Internal **pull-downs** on both audio inputs (GPIO13, GPIO18) | ESP32 | A floating data line is noise in the mix |
+| b | Internal **pull-ups** on both UART RX pins (GPIO33, GPIO19) | ESP32 | A floating RX line is garbage bytes |
+| c | **Mute** an input whose board is not answering on its UART | ESP32 | Belt and braces for (a) |
+| d | A **slip buffer** between I2S capture and the Bluetooth feed | ESP32 | The I2S rate and the Bluetooth stack's timing come from one crystal but through different dividers, so they differ by a few parts per million. Nothing needs resampling, but a sample must be dropped or repeated now and then, or a buffer overflows after minutes to hours. Difficulty 2–3/10 |
+| e | Tell each input board **which input it is** | ESP32 → input board, at start-up | One firmware image, but the two need different USB serial numbers and network addresses. The ESP32 knows: UART1 is input 1, UART2 is input 2 |
+
+Also: an input board's firmware never drives or reads GP26, GP27 or GP29, and takes its clocks on GP9/GP10 (`hardware/wiring.md`).
 
 **Latency owned by the box:** input board FIFO ~2 ms + the ESP32's I2S DMA buffers (keep them small; to be measured) + SBC framing. The Bluetooth link and the headphones' buffer add the rest.
 
@@ -74,7 +88,7 @@ How the box works end to end. This is the single reference for firmware work. De
 - About 1 Mbaud, 8N1.
 - Framed messages: start byte, length, type, sequence number, payload, CRC.
 - Commands that change state get an acknowledgement; the sender retries on timeout.
-- Input-board pins: TX GP4, RX GP5 (RP2350 UART1). ESP32: UART1 (GPIO17/16) for input board 1, UART2 (GPIO19/18) for input board 2. Full map: `hardware/wiring.md`.
+- Input-board pins: TX GP4, RX GP5 (RP2350 UART1). ESP32: UART1 on GPIO25 (TX) / GPIO33 (RX) for input board 1, UART2 on GPIO21 (TX) / GPIO19 (RX) for input board 2. Full map: `hardware/wiring.md`.
 
 **Commands the ESP32 should support** (first pass, not final):
 
@@ -99,6 +113,7 @@ How the box works end to end. This is the single reference for firmware work. De
 | ESP32 I2S1 following I2S0's looped-back clocks | 5/10 | Test early, before the Bluetooth work |
 | Sound card + network adapter as one USB device, across macOS, Linux and Android | 5/10 | Test on each host type early. Fallback: USB MIDI or USB serial for control; the UART protocol is unchanged. |
 | RP2350 RAM/CPU for USB audio + lwIP + web server together | 3/10 | Measure; keep the page small and serve it from flash. The RP2350's 520 KB RAM (vs the RP2040's 264 KB) is why the input board changed |
+| I2S capture and Bluetooth feed drifting apart | 2–3/10 | Slip buffer (§2a d); log its fill level |
 | ESP32-A2DP volume handling | Low: supported (verified) | Use `A2DPNoVolumeControl` to avoid applying volume twice; handle passthrough VOL keys (review-notes #16) |
 
 ## 6. Suggested bring-up order

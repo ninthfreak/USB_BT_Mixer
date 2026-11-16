@@ -7,7 +7,7 @@ actually built:
 
   0. each module lies the way its PICTURE in docs/sources shows it, not its
      mirror image. Stated in board terms -- west, east, front -- so no
-     footprint frame or rotation convention can hide a flip. For five weeks
+     footprint frame or rotation convention can hide a flip. For three weeks
      the input boards' pattern was mirrored and every other check passed
      (docs/project-review-2026-11.md #1)
   1. both input boards face the hosts with their NATIVE USB port: board edge
